@@ -46,6 +46,14 @@ def test_health_empty_store(client: TestClient) -> None:
     assert response.json() == {"status": "ok", "documents": 0, "chunks_indexed": 0}
 
 
+def test_home_page_returns_ui(client: TestClient) -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "AI RAG Backend System" in response.text
+
+
 def test_health_after_ingest(client: TestClient) -> None:
     client.post("/documents", json={"source": "doc-a", "text": "Hello world from doc-a."})
     client.post("/documents", json={"source": "doc-b", "text": "Another document here."})

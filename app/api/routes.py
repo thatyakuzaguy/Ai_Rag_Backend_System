@@ -12,8 +12,14 @@ from app.models.schemas import (
 )
 from app.services.rag import RAGService
 from app.services.vector_store import SQLiteVectorStore
+from app.web import home_page
 
 router = APIRouter()
+
+
+@router.get("/", include_in_schema=False)
+def home():
+    return home_page()
 
 
 @router.get("/health", response_model=HealthResponse)
