@@ -36,7 +36,12 @@ class SQLiteVectorStore:
             )
         return len(rows)
 
-    def search(self, query_embedding: list[float], top_k: int) -> list[RetrievedChunk]:
+    def search(
+        self,
+        query_embedding: list[float],
+        top_k: int,
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> list[RetrievedChunk]:
         with self._connection() as conn:
             records = conn.execute(
                 "SELECT id, source, text, embedding, metadata FROM chunks"
@@ -44,6 +49,11 @@ class SQLiteVectorStore:
 
         scored: list[RetrievedChunk] = []
         for record in records:
+            metadata = json.loads(record["metadata"] or "{}")
+            if metadata_filter and not all(
+                metadata.get(key) == value for key, value in metadata_filter.items()
+            ):
+                continue
             embedding = json.loads(record["embedding"])
             score = self._cosine_similarity(query_embedding, embedding)
             scored.append(
@@ -52,7 +62,7 @@ class SQLiteVectorStore:
                     source=record["source"],
                     text=record["text"],
                     score=score,
-                    metadata=json.loads(record["metadata"] or "{}"),
+                    metadata=metadata,
                 )
             )
 

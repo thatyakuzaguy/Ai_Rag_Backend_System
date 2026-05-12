@@ -41,18 +41,28 @@ class RAGService:
             )
         return self.store.add_chunks(rows)
 
-    def search(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
+    def search(
+        self,
+        query: str,
+        top_k: int | None = None,
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> list[RetrievedChunk]:
         [query_embedding] = self.embedder.embed([query])
-        return self.store.search(query_embedding=query_embedding, top_k=top_k or self.default_top_k)
+        return self.store.search(
+            query_embedding=query_embedding,
+            top_k=top_k or self.default_top_k,
+            metadata_filter=metadata_filter,
+        )
 
     def answer(
         self,
         question: str,
         top_k: int | None = None,
         history: list[ChatMessage] | None = None,
+        metadata_filter: dict[str, Any] | None = None,
     ) -> ChatResponse:
         retrieval_query = self._build_retrieval_query(question, history or [])
-        context = self.search(retrieval_query, top_k=top_k)
+        context = self.search(retrieval_query, top_k=top_k, metadata_filter=metadata_filter)
         answer = self.llm.answer(self._build_generation_question(question, history or []), context)
         citations = [
             Citation(source=item.source, chunk_id=item.id, score=item.score)

@@ -60,3 +60,97 @@ class HealthResponse(BaseModel):
     status: str
     documents: int
     chunks_indexed: int
+
+
+class RegisterRequest(BaseModel):
+    email: str = Field(..., min_length=5)
+    password: str = Field(..., min_length=8)
+    display_name: str = Field(..., min_length=1)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., min_length=5)
+    password: str = Field(..., min_length=8)
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    display_name: str
+    created_at: str
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserResponse
+
+
+class CollectionCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1)
+    description: str = ""
+
+
+class CollectionResponse(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    description: str
+    created_at: str
+    document_count: int = 0
+    chat_count: int = 0
+
+
+class CollectionDocumentRequest(BaseModel):
+    source: str = Field(..., min_length=1)
+    text: str = Field(..., min_length=1)
+
+
+class DocumentRecordResponse(BaseModel):
+    id: str
+    user_id: str
+    collection_id: str
+    source: str
+    chunks_indexed: int
+    created_at: str
+
+
+class ChatSessionCreateRequest(BaseModel):
+    title: str = Field(default="New chat", min_length=1)
+
+
+class ChatSessionResponse(BaseModel):
+    id: str
+    user_id: str
+    collection_id: str
+    title: str
+    created_at: str
+    updated_at: str
+
+
+class CollectionChatRequest(BaseModel):
+    question: str = Field(..., min_length=2)
+    session_id: str | None = None
+    top_k: int = Field(default=4, ge=1, le=20)
+
+
+class CollectionChatResponse(ChatResponse):
+    session_id: str
+
+
+class FeedbackRequest(BaseModel):
+    session_id: str
+    rating: int = Field(..., ge=-1, le=1)
+    comment: str = ""
+
+
+class FeedbackResponse(BaseModel):
+    id: str
+    rating: int
+    comment: str
+
+
+class DashboardMetrics(BaseModel):
+    collections: int
+    documents: int
+    chats: int
+    messages: int

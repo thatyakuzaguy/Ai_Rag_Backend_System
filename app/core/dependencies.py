@@ -4,6 +4,7 @@ from app.core.settings import Settings, get_settings
 from app.services.chunker import TextChunker
 from app.services.embeddings import EmbeddingProvider, build_embedding_provider
 from app.services.llm import LLMProvider, build_llm_provider
+from app.services.app_store import AppStore
 from app.services.rag import RAGService
 from app.services.vector_store import SQLiteVectorStore
 
@@ -21,6 +22,12 @@ def get_llm_provider() -> LLMProvider:
 @lru_cache
 def get_vector_store() -> SQLiteVectorStore:
     return SQLiteVectorStore(get_settings().database_path)
+
+
+@lru_cache
+def get_app_store() -> AppStore:
+    settings = get_settings()
+    return AppStore(settings.database_path.with_name("app.sqlite3"))
 
 
 @lru_cache

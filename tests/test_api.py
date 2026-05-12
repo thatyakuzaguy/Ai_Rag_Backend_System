@@ -7,12 +7,14 @@ from app.services.chunker import TextChunker
 from app.services.embeddings import LocalHashingEmbeddingProvider
 from app.services.llm import LocalExtractiveLLMProvider
 from app.services.rag import RAGService
+from app.services.app_store import AppStore
 from app.services.vector_store import SQLiteVectorStore
 
 
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
     from app.core.dependencies import (
+        get_app_store,
         get_chunker,
         get_embedding_provider,
         get_llm_provider,
@@ -22,12 +24,14 @@ def client(tmp_path: Path) -> TestClient:
     from app.main import app
 
     store = SQLiteVectorStore(tmp_path / "test.sqlite3")
+    app_store = AppStore(tmp_path / "app.sqlite3")
     embedder = LocalHashingEmbeddingProvider(dimensions=128)
     chunker = TextChunker(chunk_size=250, chunk_overlap=40)
     llm = LocalExtractiveLLMProvider()
     rag = RAGService(chunker=chunker, embedder=embedder, store=store, llm=llm)
 
     app.dependency_overrides[get_vector_store] = lambda: store
+    app.dependency_overrides[get_app_store] = lambda: app_store
     app.dependency_overrides[get_embedding_provider] = lambda: embedder
     app.dependency_overrides[get_chunker] = lambda: chunker
     app.dependency_overrides[get_llm_provider] = lambda: llm
@@ -51,7 +55,46 @@ def test_home_page_returns_ui(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "AI RAG Backend System" in response.text
+    assert "KnowledgeBase AI" in response.text
+
+
+def test_authenticated_collection_chat_flow(client: TestClient) -> None:
+    auth = client.post(
+        "/auth/register",
+        json={
+            "email": "demo@example.com",
+            "password": "password123",
+            "display_name": "Demo User",
+        },
+    )
+    assert auth.status_code == 201
+    token = auth.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    collection = client.post(
+        "/collections",
+        json={"name": "Python Notes", "description": "Learning notes"},
+        headers=headers,
+    )
+    assert collection.status_code == 201
+    collection_id = collection.json()["id"]
+
+    document = client.post(
+        f"/collections/{collection_id}/documents",
+        json={"source": "tuple-note", "text": "A Python tuple is immutable."},
+        headers=headers,
+    )
+    assert document.status_code == 201
+    assert document.json()["chunks_indexed"] >= 1
+
+    chat = client.post(
+        f"/collections/{collection_id}/chat",
+        json={"question": "Is a tuple mutable?", "top_k": 2},
+        headers=headers,
+    )
+    assert chat.status_code == 200
+    assert chat.json()["session_id"]
+    assert chat.json()["citations"]
 
 
 def test_health_after_ingest(client: TestClient) -> None:

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/thatyakuzaguy/Ai_Rag_Backend_System/actions/workflows/ci.yml/badge.svg)](https://github.com/thatyakuzaguy/Ai_Rag_Backend_System/actions/workflows/ci.yml)
 
-A lightweight Retrieval-Augmented Generation backend built with FastAPI. The system lets users ingest documents, store searchable chunks, retrieve relevant context, and ask grounded questions through a REST API or a simple web interface.
+A full-stack Retrieval-Augmented Generation workspace built with FastAPI. Users can create an account, organize documents into collections, ingest knowledge, chat with collection-specific context, and review citations through a modern browser dashboard.
 
 Live demo: [https://ai-rag-backend-system.onrender.com](https://ai-rag-backend-system.onrender.com)
 
@@ -15,7 +15,10 @@ The focus is on clean API design, service separation, testability, and deploymen
 ## Highlights
 
 - FastAPI application with interactive Swagger documentation
-- Browser-based demo page for ingestion, search, and chat
+- Modern browser dashboard with authentication and workspace metrics
+- User accounts with token-based authentication
+- Collections for grouping documents and isolating retrieval context
+- Persistent document records, chat sessions, chat messages, and feedback
 - SQLite-backed vector store with cosine similarity search
 - Local hashing embeddings for free demos
 - Optional OpenAI embeddings and chat completions
@@ -31,7 +34,15 @@ The focus is on clean API design, service separation, testability, and deploymen
 User / Client
     |
     v
-FastAPI Routes
+Dashboard + REST API
+    |
+    +-- Auth
+    |      -> register / login
+    |      -> bearer tokens
+    |
+    +-- Collections
+    |      -> user-scoped workspaces
+    |      -> document records
     |
     +-- Document ingestion
     |      -> chunk text
@@ -42,8 +53,9 @@ FastAPI Routes
     |      -> embed query
     |      -> rank chunks by cosine similarity
     |
-    +-- Chat
+    +-- Collection chat
            -> retrieve context
+           -> use recent session history
            -> generate grounded answer
            -> return citations
 ```
@@ -67,6 +79,16 @@ FastAPI Routes
 | --- | --- | --- |
 | `GET` | `/` | Web demo interface |
 | `GET` | `/health` | Service status and indexed chunk count |
+| `POST` | `/auth/register` | Create a user account |
+| `POST` | `/auth/login` | Sign in and receive a bearer token |
+| `GET` | `/dashboard` | Authenticated workspace metrics |
+| `POST` | `/collections` | Create a document collection |
+| `GET` | `/collections` | List user collections |
+| `POST` | `/collections/{id}/documents` | Ingest text into a collection |
+| `GET` | `/collections/{id}/documents` | List collection documents |
+| `POST` | `/collections/{id}/chat` | Chat with one collection |
+| `GET` | `/collections/{id}/chats` | List chat sessions |
+| `POST` | `/feedback` | Save answer feedback |
 | `POST` | `/documents` | Ingest raw text |
 | `POST` | `/documents/file` | Upload `.txt`, `.md`, or `.csv` files |
 | `GET` | `/search` | Retrieve relevant chunks |
@@ -89,7 +111,46 @@ Open:
 - API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - Health check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
-## Example Requests
+## Example Authenticated Flow
+
+Register:
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"demo@example.com\",\"password\":\"password123\",\"display_name\":\"Demo User\"}"
+```
+
+Create a collection:
+
+```bash
+curl -X POST http://127.0.0.1:8000/collections \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"Python Notes\",\"description\":\"Learning notes\"}"
+```
+
+Ingest into the collection:
+
+```bash
+curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/documents \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"source\":\"tuple-note\",\"text\":\"A Python tuple is immutable.\"}"
+```
+
+Chat with that collection:
+
+```bash
+curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/chat \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"question\":\"Is a tuple mutable?\",\"top_k\":3}"
+```
+
+## Public Demo Endpoints
+
+The project also keeps unauthenticated endpoints for simple demos and backwards compatibility.
 
 Ingest a document:
 
@@ -157,6 +218,7 @@ Current coverage focuses on:
 - chunking behavior
 - retrieval flow
 - API endpoints
+- authenticated collection chat flow
 - chat history input
 - local response extraction
 - settings validation
@@ -168,8 +230,8 @@ app/
   api/          HTTP routes
   core/         settings and dependency wiring
   models/       Pydantic schemas
-  services/     chunking, embeddings, vector store, RAG, seeding
-  web.py        lightweight homepage UI
+  services/     app store, chunking, embeddings, vector store, RAG, seeding
+  web.py        dashboard UI
 tests/          pytest suite
 ```
 
