@@ -114,6 +114,97 @@ Useful Example Replies
 """.strip()
 
 
+ADVANCED_PYTHON_FASTAPI_SQL = """
+Advanced Python, FastAPI, SQL, and Conversation Knowledge Pack
+
+Advanced Conversation Behavior
+- For technical questions, answer with a clear explanation, a practical example, and a short warning about common mistakes.
+- For debugging questions, ask for the error message, stack trace, input data, and the smallest reproducible example when needed.
+- For architecture questions, compare tradeoffs instead of pretending there is only one correct answer.
+- For follow-up questions, use the previous chat context to resolve references such as "that function", "this endpoint", "the previous query", or "it".
+- If the user asks for code, prefer small, runnable examples.
+- If the user asks for security advice, mention input validation, authentication, authorization, logging, rate limiting, secrets management, and least privilege.
+- If the indexed context is insufficient, say what is missing and suggest what document should be ingested.
+
+Advanced Python
+- Prefer simple, explicit code over clever code.
+- Use pathlib.Path for filesystem paths instead of manual string joins.
+- Use context managers for resources such as files, database connections, locks, and temporary directories.
+- Avoid mutable default arguments such as def add_item(item, items=[]). Use None and create the list inside the function.
+- Use dataclasses for lightweight data containers when behavior is minimal.
+- Use Pydantic models when validating external input or API data.
+- Use generators when streaming large data or avoiding memory-heavy lists.
+- Use list comprehensions for simple transformations, but use normal loops when logic becomes complex.
+- Use exceptions for exceptional cases, not normal control flow.
+- Catch specific exceptions instead of broad except Exception unless you are translating errors at an application boundary.
+- Type hints improve maintainability: def get_user(user_id: str) -> User | None.
+- Dependency injection makes code easier to test because real services can be replaced with fakes.
+- Good tests focus on behavior, edge cases, permissions, and regressions.
+
+FastAPI Architecture
+- FastAPI routes should stay thin: parse input, call services, return response models.
+- Business logic belongs in service classes or functions, not directly inside route handlers.
+- Pydantic request models validate incoming data and response models control what leaves the API.
+- Use Depends for dependencies such as authenticated users, database stores, and service objects.
+- Raise HTTPException for expected client errors such as 400, 401, 403, 404, and 409.
+- Avoid leaking internal exception details to API clients.
+- Use status codes intentionally: 201 for created resources, 401 for missing/invalid auth, 403 for forbidden access, 404 for missing resources, 409 for conflicts, 422 for validation errors.
+- Use TestClient for integration tests against route behavior.
+- For production APIs, add CORS intentionally, rate limiting, structured logging, request IDs, and health checks.
+- File upload endpoints should validate file extension, content type, and size.
+- Long-running ingestion should eventually move to a background worker or queue.
+
+Authentication and Authorization
+- Authentication answers "who are you?" Authorization answers "are you allowed to access this resource?"
+- Bearer tokens should be random, high entropy, stored securely, and ideally expire.
+- Passwords should never be stored in plain text. Use a password hashing algorithm with salt.
+- Every user-scoped query should filter by user_id.
+- Collection-scoped chat should verify both user ownership and collection ownership.
+- Feedback should verify that the chat session belongs to the authenticated user.
+- Public write endpoints can be abused for spam or data poisoning; require authentication for writes.
+
+SQL and SQLite
+- SQL injection happens when user input is concatenated into SQL strings.
+- Use parameterized queries: conn.execute("SELECT * FROM users WHERE email = ?", (email,)).
+- Never build SQL like f"SELECT * FROM users WHERE email = '{email}'".
+- Use transactions so related writes succeed or fail together.
+- Use indexes on columns used for filtering and joins, such as user_id, collection_id, and session_id.
+- Use UNIQUE constraints for fields such as email when duplicates are invalid.
+- Use foreign keys to model relationships between users, collections, documents, chat sessions, and messages.
+- SQLite is good for demos and small apps. For production multi-user workloads, PostgreSQL is usually a better choice.
+- For vector search at larger scale, use pgvector, Qdrant, Weaviate, Pinecone, or another vector database.
+- Avoid SELECT * in large production systems when you only need a few columns.
+- Store timestamps for auditing and sorting.
+- Use migrations such as Alembic when schemas evolve in production.
+
+SQL Query Examples
+- Get a user by email safely: SELECT * FROM users WHERE email = ?.
+- Count documents per collection with a join and group by.
+- Delete by source safely: DELETE FROM chunks WHERE source = ?.
+- Search by ownership safely by including WHERE user_id = ?.
+
+RAG Architecture
+- RAG means Retrieval-Augmented Generation.
+- Ingestion usually includes loading documents, normalizing text, chunking, embedding chunks, and storing vectors with metadata.
+- Retrieval embeds the user query and finds the most similar chunks.
+- Generation uses retrieved chunks as context for the answer.
+- Citations help users understand which sources supported an answer.
+- Metadata filters are important for multi-tenant systems because they prevent one user's documents from appearing in another user's answers.
+- Chunk size and overlap affect retrieval quality. Small chunks can miss context; large chunks can add noise.
+- RAG systems should handle "not enough context" honestly instead of guessing.
+
+Security Checklist for This Project
+- Require authentication for write endpoints.
+- Use parameterized SQL queries.
+- Validate request sizes and field lengths.
+- Do not expose real API keys in code, README files, logs, or frontend JavaScript.
+- Do not return raw provider exceptions to users.
+- Verify user ownership for collections, sessions, documents, and feedback.
+- Add rate limiting before exposing login or ingestion endpoints at scale.
+- Prefer PostgreSQL with migrations for production.
+""".strip()
+
+
 def seed_default_knowledge(rag: RAGService) -> int:
     chunks = rag.ingest_text(
         text=PYTHON_BASICS,
@@ -124,6 +215,11 @@ def seed_default_knowledge(rag: RAGService) -> int:
         text=CONVERSATION_BASICS,
         source="conversation-basics",
         metadata={"topic": "conversation", "seeded": True},
+    )
+    chunks += rag.ingest_text(
+        text=ADVANCED_PYTHON_FASTAPI_SQL,
+        source="advanced-python-fastapi-sql",
+        metadata={"topic": "python-fastapi-sql", "level": "advanced", "seeded": True},
     )
 
     readme = Path("README.md")

@@ -4,6 +4,7 @@ from app.services.chunker import TextChunker
 from app.services.embeddings import LocalHashingEmbeddingProvider
 from app.services.llm import LocalExtractiveLLMProvider
 from app.services.rag import RAGService
+from app.services.seed import ADVANCED_PYTHON_FASTAPI_SQL
 from app.services.vector_store import SQLiteVectorStore
 
 
@@ -94,3 +95,18 @@ def test_local_answer_handles_basic_conversation(tmp_path: Path) -> None:
 
     assert "Hi" in greeting.answer
     assert "retrieve relevant chunks" in capability.answer
+
+
+def test_retrieves_advanced_fastapi_sql_training(tmp_path: Path) -> None:
+    service = build_service(tmp_path / "rag.sqlite3")
+    service.ingest_text(
+        ADVANCED_PYTHON_FASTAPI_SQL,
+        source="advanced-python-fastapi-sql",
+        metadata={"topic": "python-fastapi-sql", "level": "advanced"},
+    )
+
+    response = service.answer("How do I prevent SQL injection in FastAPI?", top_k=3)
+
+    assert response.citations
+    assert response.citations[0].source == "advanced-python-fastapi-sql"
+    assert "parameterized" in response.answer or "SQL injection" in response.answer
