@@ -262,6 +262,7 @@ def home_page() -> HTMLResponse:
       <label>Display name</label>
       <input id="auth-name" value="Demo User" />
       <div class="toolbar" style="margin-top:16px">
+        <button id="demo-btn">Start guided demo</button>
         <button id="register-btn">Create account</button>
         <button id="login-btn" class="secondary">Sign in</button>
       </div>
@@ -373,6 +374,14 @@ def home_page() -> HTMLResponse:
       page: "chat",
     };
     const $ = (id) => document.getElementById(id);
+    const demoDocument = [
+      "This recruiter demo collection explains how the AI RAG Backend System works.",
+      "The backend is built with FastAPI, Pydantic schemas, service-layer separation, and SQLite persistence.",
+      "The RAG pipeline chunks documents, creates embeddings, stores vectors, retrieves similar context, and returns cited answers.",
+      "SQL injection is prevented by parameterized SQLite queries instead of string-built SQL.",
+      "The authenticated workspace supports collections, document ingestion, chat sessions, conversation history, and feedback.",
+      "Python projects should keep route handlers thin, validate inputs, isolate business logic in services, and test important behavior with Pytest.",
+    ].join("\\n");
 
     async function api(path, options = {}) {
       const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -520,6 +529,45 @@ def home_page() -> HTMLResponse:
       return collection.id;
     }
 
+    async function startGuidedDemo() {
+      const stamp = Date.now();
+      const email = `reviewer-${stamp}@example.com`;
+      const password = `demo-password-${stamp}`;
+      $("auth-email").value = email;
+      $("auth-password").value = password;
+      $("auth-name").value = "Portfolio Reviewer";
+      const auth = await api("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password, display_name: "Portfolio Reviewer" }),
+      });
+      state.token = auth.token;
+      state.user = auth.user;
+      localStorage.setItem("kb_token", auth.token);
+      localStorage.setItem("kb_user", JSON.stringify(auth.user));
+      renderShell();
+      const collection = await api("/collections", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Recruiter Demo",
+          description: "Ready-to-chat sample collection for the portfolio demo",
+        }),
+      });
+      state.selectedCollectionId = collection.id;
+      localStorage.setItem("kb_collection", collection.id);
+      await api(`/collections/${collection.id}/documents`, {
+        method: "POST",
+        body: JSON.stringify({ source: "recruiter-demo-guide", text: demoDocument }),
+      });
+      $("chat-question").value = "What does this project demonstrate?";
+      $("chat-log").innerHTML = `
+        <div class="empty-chat">
+          <h2>Demo workspace ready</h2>
+          <p class="muted">A sample collection has been created. Ask the suggested question or type your own.</p>
+        </div>`;
+      await refreshAll();
+      renderPage("chat");
+    }
+
     function addBubble(role, content) {
       const empty = document.querySelector(".empty-chat");
       if (empty) empty.remove();
@@ -529,6 +577,13 @@ def home_page() -> HTMLResponse:
       $("chat-log").appendChild(div);
       $("chat-log").scrollTop = $("chat-log").scrollHeight;
     }
+
+    $("demo-btn").addEventListener("click", async () => {
+      try {
+        clearErrors();
+        await startGuidedDemo();
+      } catch (error) { showAuthError(error); }
+    });
 
     $("register-btn").addEventListener("click", async () => {
       try {

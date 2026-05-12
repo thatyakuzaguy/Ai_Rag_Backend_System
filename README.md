@@ -6,6 +6,14 @@ A full-stack Retrieval-Augmented Generation workspace built with FastAPI. Users 
 
 Live demo: [https://ai-rag-backend-system.onrender.com](https://ai-rag-backend-system.onrender.com)
 
+## Recruiter Quick Demo
+
+1. Open the live demo.
+2. Click **Start guided demo**.
+3. Ask the suggested question or try: `How does this project prevent SQL injection?`
+
+The guided demo creates a temporary reviewer account, a sample collection, and a starter document so the chat is usable immediately.
+
 ## Why I Built This
 
 This project was built to demonstrate the backend pieces behind a practical RAG workflow without depending on expensive infrastructure. It runs in a free local mode by default, but the provider layer can be switched to OpenAI for production-style responses.
@@ -89,11 +97,11 @@ Dashboard + REST API
 | `POST` | `/collections/{id}/chat` | Chat with one collection |
 | `GET` | `/collections/{id}/chats` | List chat sessions |
 | `POST` | `/feedback` | Save answer feedback |
-| `POST` | `/documents` | Ingest raw text |
-| `POST` | `/documents/file` | Upload `.txt`, `.md`, or `.csv` files |
+| `POST` | `/documents` | Ingest raw text with authentication |
+| `POST` | `/documents/file` | Upload `.txt`, `.md`, or `.csv` files with authentication |
 | `GET` | `/search` | Retrieve relevant chunks |
 | `POST` | `/chat` | Ask a grounded question with citations |
-| `DELETE` | `/documents/{source}` | Delete indexed chunks by source |
+| `DELETE` | `/documents/{source}` | Delete indexed chunks by source with authentication |
 
 ## Running Locally
 
@@ -148,17 +156,9 @@ curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/chat \
   -d "{\"question\":\"Is a tuple mutable?\",\"top_k\":3}"
 ```
 
-## Public Demo Endpoints
+## Legacy Search and Chat
 
-The project also keeps unauthenticated endpoints for simple demos and backwards compatibility.
-
-Ingest a document:
-
-```bash
-curl -X POST http://127.0.0.1:8000/documents \
-  -H "Content-Type: application/json" \
-  -d "{\"source\":\"demo-note\",\"text\":\"RAG retrieves relevant context before generating an answer.\"}"
-```
+The project keeps public search and chat endpoints for simple demos and backwards compatibility. Document ingestion and deletion require a bearer token.
 
 Search indexed content:
 
@@ -171,7 +171,16 @@ Ask a question:
 ```bash
 curl -X POST http://127.0.0.1:8000/chat \
   -H "Content-Type: application/json" \
-  -d "{\"question\":\"What does RAG retrieve before answering?\",\"top_k\":3}"
+  -d "{\"question\":\"What does this system demonstrate?\",\"top_k\":3}"
+```
+
+Authenticated raw ingestion:
+
+```bash
+curl -X POST http://127.0.0.1:8000/documents \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"source\":\"demo-note\",\"text\":\"RAG retrieves relevant context before generating an answer.\"}"
 ```
 
 ## Configuration
