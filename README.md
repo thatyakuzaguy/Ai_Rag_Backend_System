@@ -2,91 +2,61 @@
 
 [![CI](https://github.com/thatyakuzaguy/Ai_Rag_Backend_System/actions/workflows/ci.yml/badge.svg)](https://github.com/thatyakuzaguy/Ai_Rag_Backend_System/actions/workflows/ci.yml)
 
-A full-stack Retrieval-Augmented Generation backend built with FastAPI. The live homepage presents the system architecture, while the API supports accounts, collections, document ingestion, vector search, collection-specific chat, citations, and feedback.
+A deployed FastAPI backend for Retrieval-Augmented Generation workflows. It includes authentication, user-scoped collections, document ingestion, vector retrieval, cited answers, chat history, feedback storage, security checks, and a polished public showcase page for recruiters.
 
 Live demo: [https://ai-rag-backend-system.onrender.com](https://ai-rag-backend-system.onrender.com)
 
-## Recruiter Quick Demo
+API docs: [https://ai-rag-backend-system.onrender.com/docs](https://ai-rag-backend-system.onrender.com/docs)
 
-1. Open the live demo.
-2. Review the architecture, security, testing, and deployment sections on the homepage.
-3. Open **Swagger Docs** to inspect the working API endpoints.
+## Recruiter Review
 
-The homepage is intentionally a polished project showcase. The backend functionality remains available through Swagger and the source code.
+1. Open the live demo to see the project overview.
+2. Open Swagger Docs to inspect and test the API contract.
+3. Review the tests for auth, RAG behavior, SQL injection safety, and collection isolation.
 
-## Why I Built This
+This is a portfolio demo, so the homepage focuses on communicating the backend system clearly. The working API remains available through Swagger and the source code.
 
-This project was built to demonstrate the backend pieces behind a practical RAG workflow without depending on expensive infrastructure. It runs in a free local mode by default, but the provider layer can be switched to OpenAI for production-style responses.
+## What This Demonstrates
 
-The focus is on clean API design, service separation, testability, and deployment readiness.
-
-## Highlights
-
-- FastAPI application with interactive Swagger documentation
-- Polished public showcase homepage for recruiters
-- User accounts with token-based authentication
-- Collections for grouping documents and isolating retrieval context
-- Persistent document records, chat sessions, chat messages, and feedback
-- SQLite-backed vector store with cosine similarity search
-- Local hashing embeddings for free demos
-- Optional OpenAI embeddings and chat completions
-- Chunking pipeline with overlap and source metadata
-- Conversation history support for follow-up questions
-- Startup seeding for default demo knowledge
-- Docker support and Render-compatible deployment
-- Pytest and Ruff checks through GitHub Actions
+- FastAPI REST API design with Pydantic validation
+- User registration, login, bearer tokens, and hashed credentials
+- User-scoped collections to isolate private document context
+- Text ingestion, chunking, embedding, and vector retrieval
+- SQLite-backed persistence for users, collections, documents, chats, feedback, and vectors
+- Local no-cost AI provider mode for demos
+- Optional OpenAI provider mode for stronger generation
+- Conversation-aware RAG endpoint with citations
+- SQL injection regression tests and parameterized queries
+- Docker and Render deployment readiness
+- CI checks with Pytest and Ruff
 
 ## Architecture
 
 ```text
-User / Client
+Client / Swagger / Showcase Page
     |
     v
-Dashboard + REST API
+FastAPI routes
     |
-    +-- Auth
-    |      -> register / login
-    |      -> bearer tokens
+    +-- Auth service
+    |      -> register, login, bearer token validation
     |
-    +-- Collections
-    |      -> user-scoped workspaces
-    |      -> document records
+    +-- App store
+    |      -> users, collections, documents, sessions, feedback
     |
-    +-- Document ingestion
-    |      -> chunk text
-    |      -> create embeddings
-    |      -> persist chunks
+    +-- RAG service
+    |      -> chunk text, embed content, retrieve context, answer with citations
     |
-    +-- Search
-    |      -> embed query
-    |      -> rank chunks by cosine similarity
-    |
-    +-- Collection chat
-           -> retrieve context
-           -> use recent session history
-           -> generate grounded answer
-           -> return citations
+    +-- Vector store
+           -> SQLite chunks, metadata filters, cosine similarity search
 ```
 
-## Tech Stack
+## Main Endpoints
 
-| Area | Technology |
-| --- | --- |
-| API | FastAPI |
-| Runtime | Python 3.10+ |
-| Storage | SQLite |
-| Validation | Pydantic |
-| AI Providers | Local hashing, optional OpenAI |
-| Testing | Pytest |
-| Linting | Ruff |
-| Deployment | Docker, Render |
-
-## API Overview
-
-| Method | Endpoint | Description |
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/` | Web demo interface |
-| `GET` | `/health` | Service status and indexed chunk count |
+| `GET` | `/` | Public showcase page |
+| `GET` | `/health` | Service status and indexed document count |
 | `POST` | `/auth/register` | Create a user account |
 | `POST` | `/auth/login` | Sign in and receive a bearer token |
 | `GET` | `/dashboard` | Authenticated workspace metrics |
@@ -94,16 +64,29 @@ Dashboard + REST API
 | `GET` | `/collections` | List user collections |
 | `POST` | `/collections/{id}/documents` | Ingest text into a collection |
 | `GET` | `/collections/{id}/documents` | List collection documents |
-| `POST` | `/collections/{id}/chat` | Chat with one collection |
+| `POST` | `/collections/{id}/chat` | Ask a collection-scoped RAG question |
 | `GET` | `/collections/{id}/chats` | List chat sessions |
-| `POST` | `/feedback` | Save answer feedback |
-| `POST` | `/documents` | Ingest raw text with authentication |
-| `POST` | `/documents/file` | Upload `.txt`, `.md`, or `.csv` files with authentication |
-| `GET` | `/search` | Retrieve relevant chunks |
-| `POST` | `/chat` | Ask a grounded question with citations |
-| `DELETE` | `/documents/{source}` | Delete indexed chunks by source with authentication |
+| `POST` | `/feedback` | Store answer feedback |
+| `GET` | `/search` | Public semantic search over indexed chunks |
+| `POST` | `/chat` | Public RAG answer endpoint |
 
-## Running Locally
+Write endpoints require authentication unless marked public.
+
+## Tech Stack
+
+| Area | Technology |
+| --- | --- |
+| API | FastAPI |
+| Runtime | Python 3.10+ |
+| Validation | Pydantic |
+| Storage | SQLite |
+| Retrieval | Local hashing embeddings + cosine similarity |
+| Optional AI | OpenAI embeddings and chat completions |
+| Testing | Pytest |
+| Linting | Ruff |
+| Deployment | Docker, Render |
+
+## Run Locally
 
 ```bash
 python -m venv .venv
@@ -115,11 +98,11 @@ uvicorn app.main:app --reload
 
 Open:
 
-- Web interface: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- Health check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- Showcase: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- Swagger Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- Health Check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
-## Example Authenticated Flow
+## Example API Flow
 
 Register:
 
@@ -138,7 +121,7 @@ curl -X POST http://127.0.0.1:8000/collections \
   -d "{\"name\":\"Python Notes\",\"description\":\"Learning notes\"}"
 ```
 
-Ingest into the collection:
+Ingest text:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/documents \
@@ -147,7 +130,7 @@ curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/documents \
   -d "{\"source\":\"tuple-note\",\"text\":\"A Python tuple is immutable.\"}"
 ```
 
-Chat with that collection:
+Ask a collection-scoped question:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/chat \
@@ -156,36 +139,9 @@ curl -X POST http://127.0.0.1:8000/collections/COLLECTION_ID/chat \
   -d "{\"question\":\"Is a tuple mutable?\",\"top_k\":3}"
 ```
 
-## Legacy Search and Chat
-
-The project keeps public search and chat endpoints for simple demos and backwards compatibility. Document ingestion and deletion require a bearer token.
-
-Search indexed content:
-
-```bash
-curl "http://127.0.0.1:8000/search?query=relevant%20context&top_k=3"
-```
-
-Ask a question:
-
-```bash
-curl -X POST http://127.0.0.1:8000/chat \
-  -H "Content-Type: application/json" \
-  -d "{\"question\":\"What does this system demonstrate?\",\"top_k\":3}"
-```
-
-Authenticated raw ingestion:
-
-```bash
-curl -X POST http://127.0.0.1:8000/documents \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"source\":\"demo-note\",\"text\":\"RAG retrieves relevant context before generating an answer.\"}"
-```
-
 ## Configuration
 
-The default setup uses local providers so the app can run without paid API calls.
+The default configuration uses local providers, so the demo can run without paid API calls.
 
 ```env
 EMBEDDING_PROVIDER=local
@@ -213,37 +169,38 @@ copy .env.example .env
 docker compose up --build
 ```
 
-The Dockerfile uses Render's `PORT` environment variable when deployed and falls back to port `8000` locally.
+The Dockerfile uses Render's `PORT` environment variable in production and falls back to port `8000` locally.
 
 ## Tests
 
 ```bash
 pytest
-ruff check app tests
+ruff check
 ```
 
-Current coverage focuses on:
+Test coverage includes:
 
-- chunking behavior
-- retrieval flow
-- API endpoints
+- API health and validation
+- authentication and bearer token access
 - authenticated collection chat flow
-- chat history input
-- local response extraction
+- collection ownership isolation
+- SQL injection regression cases
+- RAG retrieval and local answer extraction
+- chat history handling
 - settings validation
 
 ## Project Structure
 
 ```text
 app/
-  api/          HTTP routes
+  api/          FastAPI route modules
   core/         settings and dependency wiring
-  models/       Pydantic schemas
-  services/     app store, chunking, embeddings, vector store, RAG, seeding
-  web.py        dashboard UI
+  models/       Pydantic request and response schemas
+  services/     auth store, chunking, embeddings, vector search, RAG, seeding
+  web.py        public showcase homepage
 tests/          pytest suite
 ```
 
-## Notes
+## Production Notes
 
-SQLite works well for a portfolio demo and keeps deployment simple. For a larger production system, the vector store would be replaced with a dedicated database or vector search service, and background jobs would handle larger ingestion workloads.
+SQLite keeps this demo simple and deployable on free infrastructure. For a production version, I would move vectors to a dedicated vector database, run ingestion in background jobs, add refresh tokens, rate limiting, observability, and stronger model evaluation.
