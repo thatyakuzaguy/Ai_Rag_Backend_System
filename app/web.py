@@ -12,26 +12,31 @@ def home_page() -> HTMLResponse:
   <title>KnowledgeBase AI</title>
   <style>
     :root {
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --ink: #161a22;
-      --muted: #667085;
-      --line: #dce2ea;
-      --brand: #0f6b7a;
-      --brand-dark: #0a4e5a;
-      --soft: #edf7f8;
+      --bg: #fff8f8;
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-solid: #ffffff;
+      --ink: #22191d;
+      --muted: #7a6670;
+      --line: #ead5dc;
+      --brand: #b84f74;
+      --brand-dark: #8f3457;
+      --soft: #fff0f4;
+      --sidebar: #2a2027;
+      --sidebar-soft: #3a2933;
       --danger: #b42318;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
-      background: var(--bg);
+      background:
+        linear-gradient(135deg, rgba(255, 245, 247, 0.92), rgba(255, 252, 248, 0.96)),
+        var(--bg);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; }
+    body { margin: 0; min-height: 100vh; }
     button, input, textarea { font: inherit; }
     button {
       min-height: 40px;
       border: 0;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 0 14px;
       background: var(--brand);
       color: #fff;
@@ -39,140 +44,217 @@ def home_page() -> HTMLResponse:
       cursor: pointer;
     }
     button:hover { background: var(--brand-dark); }
-    button.secondary { background: #e8edf3; color: #26323f; }
-    button.secondary:hover { background: #d8e0e8; }
-    input, textarea, select {
+    button.secondary { background: #f3e6eb; color: #3d2933; }
+    button.secondary:hover { background: #ead5dc; }
+    input, textarea {
       width: 100%;
-      border: 1px solid #cbd4df;
-      border-radius: 6px;
-      padding: 10px 12px;
-      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #fffdfd;
       color: var(--ink);
+      outline-color: #d97898;
     }
     textarea { min-height: 150px; resize: vertical; }
-    label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 800; color: #344054; }
-    .shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-    aside {
-      border-right: 1px solid var(--line);
-      background: #111820;
-      color: #ecf1f4;
-      padding: 22px;
-    }
-    .brand { font-size: 22px; font-weight: 900; letter-spacing: 0; margin-bottom: 8px; }
-    .tagline { color: #b5c0cc; line-height: 1.5; margin: 0 0 22px; }
-    nav { display: grid; gap: 8px; margin-top: 20px; }
-    nav a {
-      color: #d9e3ea;
-      text-decoration: none;
-      padding: 10px 12px;
-      border-radius: 6px;
-      background: rgba(255,255,255,0.06);
-    }
-    nav a:hover { background: rgba(255,255,255,0.12); }
-    main { padding: 26px; }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 22px;
-    }
-    h1 { margin: 0; font-size: 30px; line-height: 1.1; }
-    h2 { margin: 0 0 14px; font-size: 18px; }
-    h3 { margin: 0 0 8px; font-size: 15px; }
-    .muted { color: var(--muted); }
-    .grid { display: grid; gap: 16px; }
-    .cols-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 18px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-    }
-    .metric strong { display: block; font-size: 28px; }
-    .metric span { color: var(--muted); font-size: 13px; }
-    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .collection-list, .doc-list, .chat-log { display: grid; gap: 10px; }
-    .item {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      background: #fbfcfd;
-    }
-    .item.active { border-color: var(--brand); background: var(--soft); }
-    .item button { margin-top: 10px; }
-    .chat-log {
-      min-height: 320px;
-      max-height: 520px;
-      overflow: auto;
-      padding: 12px;
-      background: #f7f9fb;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-    }
-    .bubble {
-      max-width: 82%;
-      padding: 12px 14px;
-      border-radius: 8px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-    }
-    .bubble.user { justify-self: end; background: var(--brand); color: white; }
-    .bubble.assistant { justify-self: start; background: #ffffff; border: 1px solid var(--line); }
-    .notice {
-      padding: 10px 12px;
-      border-radius: 6px;
-      background: #fff7e6;
-      color: #7a4b00;
-      border: 1px solid #ffd591;
-    }
-    .error { color: var(--danger); }
+    label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 800; color: #5f4350; }
     .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .error { color: var(--danger); }
+    .petals {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .petal {
+      position: absolute;
+      width: 15px;
+      height: 22px;
+      border-radius: 70% 30% 70% 30%;
+      background: rgba(232, 135, 164, 0.24);
+      transform: rotate(28deg);
+    }
+    .petal:nth-child(1) { left: 8%; top: 12%; }
+    .petal:nth-child(2) { left: 72%; top: 10%; transform: rotate(-18deg); }
+    .petal:nth-child(3) { left: 87%; top: 48%; }
+    .petal:nth-child(4) { left: 18%; top: 78%; transform: rotate(-38deg); }
+    .petal:nth-child(5) { left: 54%; top: 86%; }
     .auth {
-      max-width: 980px;
-      margin: 46px auto;
+      position: relative;
+      z-index: 1;
+      max-width: 1080px;
+      margin: 44px auto;
       display: grid;
       grid-template-columns: 1fr 430px;
       gap: 24px;
       padding: 0 20px;
     }
     .auth-hero {
+      min-height: 500px;
       padding: 34px;
-      border-radius: 8px;
-      background: #101820;
-      color: #eef6f8;
-      min-height: 460px;
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(42, 32, 39, 0.94), rgba(91, 50, 66, 0.9));
+      color: #fff7fa;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      box-shadow: 0 24px 70px rgba(91, 50, 66, 0.18);
     }
-    .auth-hero h1 { font-size: 44px; }
-    .auth-card { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 22px; }
+    .brand { font-size: 22px; font-weight: 950; letter-spacing: 0; }
+    .auth-hero h1 { margin: 18px 0 12px; font-size: clamp(40px, 6vw, 64px); line-height: 0.98; }
+    .tagline { color: #f4dce5; line-height: 1.55; max-width: 620px; }
+    .auth-card, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 18px 45px rgba(90, 48, 64, 0.08);
+      backdrop-filter: blur(10px);
+    }
+    .app {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 288px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    aside {
+      background:
+        linear-gradient(180deg, rgba(42, 32, 39, 0.98), rgba(52, 37, 47, 0.98));
+      color: #fff7fa;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .new-chat {
+      width: 100%;
+      background: #fff7fa;
+      color: #3a2933;
+    }
+    nav { display: grid; gap: 8px; }
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #f7e8ee;
+    }
+    .nav-btn.active, .nav-btn:hover { background: var(--sidebar-soft); }
+    .sidebar-footer {
+      margin-top: auto;
+      display: grid;
+      gap: 8px;
+      color: #dec4ce;
+      font-size: 13px;
+    }
+    main {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+    }
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(10px);
+    }
+    .page { padding: 24px; min-width: 0; }
+    h1, h2, h3 { margin: 0; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 20px; margin-bottom: 14px; }
+    h3 { font-size: 15px; margin-bottom: 6px; }
+    .grid { display: grid; gap: 16px; }
+    .cols-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .metric strong { display: block; font-size: 30px; }
+    .metric span { color: var(--muted); font-size: 13px; }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px;
+      background: #fffdfd;
+    }
+    .item.active { border-color: var(--brand); background: var(--soft); }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .chat-page {
+      height: calc(100vh - 72px);
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: 0;
+    }
+    .chat-log {
+      overflow: auto;
+      padding: 28px max(24px, 12vw);
+      display: grid;
+      align-content: start;
+      gap: 16px;
+    }
+    .empty-chat {
+      align-self: center;
+      justify-self: center;
+      text-align: center;
+      max-width: 620px;
+      padding: 30px;
+    }
+    .empty-chat h2 { font-size: 36px; margin-bottom: 10px; }
+    .bubble {
+      max-width: 760px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      box-shadow: 0 8px 22px rgba(74, 38, 53, 0.06);
+    }
+    .bubble.user { justify-self: end; background: var(--brand); color: white; border-bottom-right-radius: 4px; }
+    .bubble.assistant { justify-self: start; background: var(--panel-solid); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+    .composer {
+      padding: 18px max(24px, 12vw) 24px;
+      background: linear-gradient(180deg, rgba(255,248,248,0.2), rgba(255,248,248,0.96));
+    }
+    .composer-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 18px 40px rgba(74, 38, 53, 0.08);
+    }
+    .composer-box input { border: 0; }
     @media (max-width: 980px) {
-      .shell { grid-template-columns: 1fr; }
-      aside { position: static; }
-      .cols-2, .cols-4, .auth { grid-template-columns: 1fr; }
+      .auth, .app, .cols-2, .cols-4 { grid-template-columns: 1fr; }
+      aside { min-height: auto; }
+      .chat-page { height: auto; min-height: calc(100vh - 72px); }
+      .chat-log, .composer { padding-left: 18px; padding-right: 18px; }
     }
   </style>
 </head>
 <body>
+  <div class="petals">
+    <span class="petal"></span><span class="petal"></span><span class="petal"></span><span class="petal"></span><span class="petal"></span>
+  </div>
+
   <section id="auth-view" class="auth">
     <div class="auth-hero">
       <div>
         <div class="brand">KnowledgeBase AI</div>
-        <h1>Chat with your documents.</h1>
-        <p class="tagline">A FastAPI RAG workspace with document ingestion, collections, citations, chat history, and free local AI providers for portfolio demos.</p>
+        <h1>Sakura workspace for grounded answers.</h1>
+        <p class="tagline">A ChatGPT-style RAG dashboard for private collections, document ingestion, citations, and technical learning.</p>
       </div>
-      <div class="grid cols-2">
-        <div><strong>RAG</strong><p class="tagline">Retrieve context before answering.</p></div>
-        <div><strong>Cost aware</strong><p class="tagline">Runs without paid AI APIs by default.</p></div>
-      </div>
+      <p class="tagline">Free local AI mode by default. Optional OpenAI mode when you want richer generation.</p>
     </div>
     <div class="auth-card">
       <h2>Access workspace</h2>
-      <p class="muted">Create a demo account or sign in to your existing workspace.</p>
+      <p class="muted">Create an account or sign in. If Render redeploys, you may need to sign in again.</p>
       <label>Email</label>
       <input id="auth-email" value="demo@example.com" />
       <label>Password</label>
@@ -187,73 +269,96 @@ def home_page() -> HTMLResponse:
     </div>
   </section>
 
-  <section id="app-view" class="shell hidden">
+  <section id="app-view" class="app hidden">
     <aside>
-      <div class="brand">KnowledgeBase AI</div>
-      <p class="tagline">Private document collections with grounded answers and citations.</p>
-      <div class="notice">Free demo mode uses local retrieval and extractive answers.</div>
+      <div>
+        <div class="brand">KnowledgeBase AI</div>
+        <p class="tagline">Sakura RAG workspace</p>
+      </div>
+      <button id="new-chat-btn" class="new-chat">New chat</button>
       <nav>
-        <a href="#dashboard">Dashboard</a>
-        <a href="#collections">Collections</a>
-        <a href="#chat">Chat</a>
-        <a href="/docs">API Docs</a>
+        <button class="nav-btn active" data-page="chat">Chat</button>
+        <button class="nav-btn" data-page="collections">Collections</button>
+        <button class="nav-btn" data-page="documents">Documents</button>
+        <button class="nav-btn" data-page="settings">Settings</button>
       </nav>
+      <div class="sidebar-footer">
+        <span id="selected-collection-label">No collection selected</span>
+        <a style="color:#fff7fa" href="/docs">API Docs</a>
+        <button id="logout-btn" class="secondary">Log out</button>
+      </div>
     </aside>
 
     <main>
-      <header>
+      <div class="topbar">
         <div>
-          <h1>Workspace</h1>
+          <h1 id="page-title">Chat</h1>
           <p id="user-line" class="muted"></p>
         </div>
-        <button id="logout-btn" class="secondary">Log out</button>
-      </header>
+        <span id="app-error" class="error"></span>
+      </div>
 
-      <section id="dashboard" class="grid cols-4" style="margin-bottom:16px">
-        <div class="panel metric"><strong id="metric-collections">0</strong><span>Collections</span></div>
-        <div class="panel metric"><strong id="metric-documents">0</strong><span>Documents</span></div>
-        <div class="panel metric"><strong id="metric-chats">0</strong><span>Chats</span></div>
-        <div class="panel metric"><strong id="metric-messages">0</strong><span>Messages</span></div>
-      </section>
-
-      <section class="grid cols-2">
-        <div id="collections" class="panel">
-          <h2>Collections</h2>
-          <label>Name</label>
-          <input id="collection-name" value="Python Notes" />
-          <label>Description</label>
-          <input id="collection-description" value="Python and backend learning notes" />
-          <button id="create-collection-btn">Create collection</button>
-          <div id="collection-list" class="collection-list" style="margin-top:16px"></div>
-        </div>
-
-        <div class="panel">
-          <h2>Documents</h2>
-          <p id="selected-collection-label" class="muted">Select a collection first.</p>
-          <label>Source</label>
-          <input id="document-source" value="python-basics-note" />
-          <label>Text</label>
-          <textarea id="document-text">A Python tuple is immutable. A list is mutable. FastAPI is used to build APIs with Python.</textarea>
-          <button id="ingest-doc-btn">Ingest document</button>
-          <div id="doc-list" class="doc-list" style="margin-top:16px"></div>
-        </div>
-      </section>
-
-      <section id="chat" class="panel" style="margin-top:16px">
-        <div class="toolbar" style="justify-content:space-between">
-          <div>
-            <h2>Collection Chat</h2>
-            <p class="muted">Ask questions against the selected collection. The backend stores chat history.</p>
+      <section id="page-chat" class="page chat-page">
+        <div id="chat-log" class="chat-log">
+          <div class="empty-chat">
+            <h2>What should we explore?</h2>
+            <p class="muted">Select or create a collection, ingest a document, then ask a question. Your answers will include citations.</p>
           </div>
-          <button id="new-chat-btn" class="secondary">New chat</button>
         </div>
-        <div id="chat-log" class="chat-log"></div>
-        <label>Question</label>
-        <div class="toolbar">
-          <input id="chat-question" value="Is a tuple mutable?" />
-          <button id="ask-btn">Ask</button>
+        <div class="composer">
+          <div class="composer-box">
+            <input id="chat-question" value="How do I prevent SQL injection in FastAPI?" />
+            <button id="ask-btn">Ask</button>
+          </div>
         </div>
-        <p id="app-error" class="error"></p>
+      </section>
+
+      <section id="page-collections" class="page hidden">
+        <div class="grid cols-4" style="margin-bottom:16px">
+          <div class="panel metric"><strong id="metric-collections">0</strong><span>Collections</span></div>
+          <div class="panel metric"><strong id="metric-documents">0</strong><span>Documents</span></div>
+          <div class="panel metric"><strong id="metric-chats">0</strong><span>Chats</span></div>
+          <div class="panel metric"><strong id="metric-messages">0</strong><span>Messages</span></div>
+        </div>
+        <div class="grid cols-2">
+          <div class="panel">
+            <h2>Create collection</h2>
+            <label>Name</label>
+            <input id="collection-name" value="Advanced Backend Notes" />
+            <label>Description</label>
+            <input id="collection-description" value="Python, FastAPI, SQL, and RAG notes" />
+            <button id="create-collection-btn">Create collection</button>
+          </div>
+          <div class="panel">
+            <h2>Your collections</h2>
+            <div id="collection-list" class="grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-documents" class="page hidden">
+        <div class="grid cols-2">
+          <div class="panel">
+            <h2>Ingest document</h2>
+            <label>Source</label>
+            <input id="document-source" value="advanced-note" />
+            <label>Text</label>
+            <textarea id="document-text">FastAPI routes should stay thin. Use services for business logic. Prevent SQL injection with parameterized queries.</textarea>
+            <button id="ingest-doc-btn">Ingest into selected collection</button>
+          </div>
+          <div class="panel">
+            <h2>Collection documents</h2>
+            <div id="doc-list" class="grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-settings" class="page hidden">
+        <div class="panel">
+          <h2>Settings</h2>
+          <p class="muted">This demo stores the bearer token in browser localStorage. If Render redeploys or the database resets, sign in again.</p>
+          <button id="clear-local-btn" class="secondary">Clear local browser session</button>
+        </div>
       </section>
     </main>
   </section>
@@ -265,6 +370,7 @@ def home_page() -> HTMLResponse:
       collections: [],
       selectedCollectionId: localStorage.getItem("kb_collection"),
       sessionId: localStorage.getItem("kb_session"),
+      page: "chat",
     };
     const $ = (id) => document.getElementById(id);
 
@@ -285,6 +391,7 @@ def home_page() -> HTMLResponse:
 
     function showAppError(error) { $("app-error").textContent = error.message || String(error); }
     function showAuthError(error) { $("auth-error").textContent = error.message || String(error); }
+    function clearErrors() { $("app-error").textContent = ""; $("auth-error").textContent = ""; }
     function escapeHtml(value) {
       return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     }
@@ -315,14 +422,25 @@ def home_page() -> HTMLResponse:
       $("auth-view").classList.toggle("hidden", Boolean(state.token));
       $("app-view").classList.toggle("hidden", !state.token);
       if (state.user) $("user-line").textContent = `${state.user.display_name} - ${state.user.email}`;
+      renderPage(state.page);
+    }
+
+    function renderPage(page) {
+      state.page = page;
+      const titles = { chat: "Chat", collections: "Collections", documents: "Documents", settings: "Settings" };
+      $("page-title").textContent = titles[page];
+      ["chat", "collections", "documents", "settings"].forEach((name) => {
+        $(`page-${name}`).classList.toggle("hidden", name !== page);
+      });
+      document.querySelectorAll(".nav-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.page === page);
+      });
     }
 
     async function refreshAll() {
       if (!state.token) return;
       await Promise.all([loadMetrics(), loadCollections()]);
-      if (state.selectedCollectionId) {
-        await loadDocuments();
-      }
+      if (state.selectedCollectionId) await loadDocuments();
     }
 
     async function loadMetrics() {
@@ -358,16 +476,17 @@ def home_page() -> HTMLResponse:
           localStorage.removeItem("kb_session");
           await loadCollections();
           await loadDocuments();
+          renderPage("chat");
         });
       });
-      renderCollections();
+      renderCollectionLabel();
     }
 
-    function renderCollections() {
+    function renderCollectionLabel() {
       const selected = state.collections.find((item) => item.id === state.selectedCollectionId);
       $("selected-collection-label").textContent = selected
-        ? `Selected: ${selected.name}`
-        : "Select a collection first.";
+        ? `Collection: ${selected.name}`
+        : "No collection selected";
     }
 
     async function loadDocuments() {
@@ -382,6 +501,8 @@ def home_page() -> HTMLResponse:
     }
 
     function addBubble(role, content) {
+      const empty = document.querySelector(".empty-chat");
+      if (empty) empty.remove();
       const div = document.createElement("div");
       div.className = `bubble ${role}`;
       div.textContent = content;
@@ -391,6 +512,7 @@ def home_page() -> HTMLResponse:
 
     $("register-btn").addEventListener("click", async () => {
       try {
+        clearErrors();
         const auth = await api("/auth/register", {
           method: "POST",
           body: JSON.stringify({
@@ -405,6 +527,7 @@ def home_page() -> HTMLResponse:
 
     $("login-btn").addEventListener("click", async () => {
       try {
+        clearErrors();
         const auth = await api("/auth/login", {
           method: "POST",
           body: JSON.stringify({ email: $("auth-email").value, password: $("auth-password").value }),
@@ -413,12 +536,19 @@ def home_page() -> HTMLResponse:
       } catch (error) { showAuthError(error); }
     });
 
-    $("logout-btn").addEventListener("click", () => {
+    $("logout-btn").addEventListener("click", clearSession);
+    $("clear-local-btn").addEventListener("click", () => {
       clearSession();
+      location.reload();
+    });
+
+    document.querySelectorAll(".nav-btn").forEach((button) => {
+      button.addEventListener("click", () => renderPage(button.dataset.page));
     });
 
     $("create-collection-btn").addEventListener("click", async () => {
       try {
+        clearErrors();
         const collection = await api("/collections", {
           method: "POST",
           body: JSON.stringify({
@@ -429,32 +559,48 @@ def home_page() -> HTMLResponse:
         state.selectedCollectionId = collection.id;
         localStorage.setItem("kb_collection", collection.id);
         await refreshAll();
-        await loadDocuments();
+        renderPage("documents");
       } catch (error) { showAppError(error); }
     });
 
     $("ingest-doc-btn").addEventListener("click", async () => {
-      if (!state.selectedCollectionId) return showAppError(new Error("Select a collection first."));
+      if (!state.selectedCollectionId) {
+        showAppError(new Error("Create or select a collection first."));
+        renderPage("collections");
+        return;
+      }
       try {
+        clearErrors();
         await api(`/collections/${state.selectedCollectionId}/documents`, {
           method: "POST",
           body: JSON.stringify({ source: $("document-source").value, text: $("document-text").value }),
         });
         await refreshAll();
+        renderPage("chat");
       } catch (error) { showAppError(error); }
     });
 
     $("new-chat-btn").addEventListener("click", () => {
       state.sessionId = null;
       localStorage.removeItem("kb_session");
-      $("chat-log").innerHTML = "";
+      $("chat-log").innerHTML = `
+        <div class="empty-chat">
+          <h2>New chat</h2>
+          <p class="muted">Ask something about the selected collection.</p>
+        </div>`;
+      renderPage("chat");
     });
 
     $("ask-btn").addEventListener("click", async () => {
-      if (!state.selectedCollectionId) return showAppError(new Error("Select a collection first."));
+      if (!state.selectedCollectionId) {
+        showAppError(new Error("Create or select a collection first."));
+        renderPage("collections");
+        return;
+      }
       const question = $("chat-question").value;
       addBubble("user", question);
       try {
+        clearErrors();
         const data = await api(`/collections/${state.selectedCollectionId}/chat`, {
           method: "POST",
           body: JSON.stringify({ question, session_id: state.sessionId, top_k: 4 }),
