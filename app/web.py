@@ -275,6 +275,10 @@ def home_page() -> HTMLResponse:
       const text = await response.text();
       let body;
       try { body = JSON.parse(text); } catch { body = text; }
+      if (response.status === 401) {
+        clearSession();
+        throw new Error("Your session expired or the server was redeployed. Please sign in again.");
+      }
       if (!response.ok) throw new Error(body.detail || body || `HTTP ${response.status}`);
       return body;
     }
@@ -292,6 +296,19 @@ def home_page() -> HTMLResponse:
       localStorage.setItem("kb_user", JSON.stringify(auth.user));
       renderShell();
       refreshAll();
+    }
+
+    function clearSession() {
+      localStorage.removeItem("kb_token");
+      localStorage.removeItem("kb_user");
+      localStorage.removeItem("kb_collection");
+      localStorage.removeItem("kb_session");
+      state.token = null;
+      state.user = null;
+      state.collections = [];
+      state.selectedCollectionId = null;
+      state.sessionId = null;
+      renderShell();
     }
 
     function renderShell() {
@@ -390,10 +407,7 @@ def home_page() -> HTMLResponse:
     });
 
     $("logout-btn").addEventListener("click", () => {
-      localStorage.clear();
-      state.token = null;
-      state.user = null;
-      renderShell();
+      clearSession();
     });
 
     $("create-collection-btn").addEventListener("click", async () => {

@@ -30,7 +30,10 @@ class AppStore:
             return None
         token = secrets.token_urlsafe(32)
         with self._connection() as conn:
-            conn.execute("INSERT INTO api_tokens (token, user_id) VALUES (?, ?)", (token, user["id"]))
+            conn.execute(
+                "INSERT INTO api_tokens (token, user_id) VALUES (?, ?)",
+                (self._hash_token(token), user["id"]),
+            )
         public_user = self._public_user(user)
         public_user["token"] = token
         return public_user
@@ -43,7 +46,7 @@ class AppStore:
                 JOIN api_tokens ON api_tokens.user_id = users.id
                 WHERE api_tokens.token = ?
                 """,
-                (token,),
+                (self._hash_token(token),),
             ).fetchone()
         return self._public_user(dict(row)) if row else None
 
@@ -354,6 +357,10 @@ class AppStore:
             120_000,
         ).hex()
         return f"{salt}${password_hash}"
+
+    @staticmethod
+    def _hash_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     @staticmethod
     def _verify_password(password: str, stored_hash: str) -> bool:

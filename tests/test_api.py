@@ -109,6 +109,34 @@ def test_authenticated_collection_chat_flow(client: TestClient) -> None:
     assert chat.json()["citations"]
 
 
+def test_login_token_can_access_dashboard(client: TestClient) -> None:
+    client.post(
+        "/auth/register",
+        json={
+            "email": "login-flow@example.com",
+            "password": "password123",
+            "display_name": "Login Flow",
+        },
+    )
+
+    login = client.post(
+        "/auth/login",
+        json={"email": "login-flow@example.com", "password": "password123"},
+    )
+    headers = {"Authorization": f"Bearer {login.json()['token']}"}
+    dashboard = client.get("/dashboard", headers=headers)
+
+    assert login.status_code == 200
+    assert dashboard.status_code == 200
+
+
+def test_invalid_bearer_token_is_rejected(client: TestClient) -> None:
+    response = client.get("/dashboard", headers={"Authorization": "Bearer stale-token"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid bearer token"
+
+
 def test_collection_chat_rejects_session_from_other_collection(client: TestClient) -> None:
     auth = client.post(
         "/auth/register",
