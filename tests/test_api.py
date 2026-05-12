@@ -11,6 +11,18 @@ from app.services.app_store import AppStore
 from app.services.vector_store import SQLiteVectorStore
 
 
+def auth_headers(client: TestClient, email: str = "user@example.com") -> dict[str, str]:
+    response = client.post(
+        "/auth/register",
+        json={
+            "email": email,
+            "password": "password123",
+            "display_name": "Test User",
+        },
+    )
+    return {"Authorization": f"Bearer {response.json()['token']}"}
+
+
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
     from app.core.dependencies import (
@@ -97,9 +109,72 @@ def test_authenticated_collection_chat_flow(client: TestClient) -> None:
     assert chat.json()["citations"]
 
 
+def test_collection_chat_rejects_session_from_other_collection(client: TestClient) -> None:
+    auth = client.post(
+        "/auth/register",
+        json={
+            "email": "security@example.com",
+            "password": "password123",
+            "display_name": "Security User",
+        },
+    )
+    headers = {"Authorization": f"Bearer {auth.json()['token']}"}
+    first = client.post("/collections", json={"name": "A"}, headers=headers).json()
+    second = client.post("/collections", json={"name": "B"}, headers=headers).json()
+    session = client.post(
+        f"/collections/{first['id']}/chats",
+        json={"title": "Private session"},
+        headers=headers,
+    ).json()
+
+    response = client.post(
+        f"/collections/{second['id']}/chat",
+        json={"question": "Can I use this session?", "session_id": session["id"]},
+        headers=headers,
+    )
+
+    assert response.status_code == 403
+
+
+def test_feedback_rejects_other_users_session(client: TestClient) -> None:
+    first_auth = client.post(
+        "/auth/register",
+        json={
+            "email": "owner@example.com",
+            "password": "password123",
+            "display_name": "Owner",
+        },
+    )
+    second_auth = client.post(
+        "/auth/register",
+        json={
+            "email": "other@example.com",
+            "password": "password123",
+            "display_name": "Other",
+        },
+    )
+    first_headers = {"Authorization": f"Bearer {first_auth.json()['token']}"}
+    second_headers = {"Authorization": f"Bearer {second_auth.json()['token']}"}
+    collection = client.post("/collections", json={"name": "Private"}, headers=first_headers).json()
+    session = client.post(
+        f"/collections/{collection['id']}/chats",
+        json={"title": "Owner chat"},
+        headers=first_headers,
+    ).json()
+
+    response = client.post(
+        "/feedback",
+        json={"session_id": session["id"], "rating": 1},
+        headers=second_headers,
+    )
+
+    assert response.status_code == 404
+
+
 def test_health_after_ingest(client: TestClient) -> None:
-    client.post("/documents", json={"source": "doc-a", "text": "Hello world from doc-a."})
-    client.post("/documents", json={"source": "doc-b", "text": "Another document here."})
+    headers = auth_headers(client, "health@example.com")
+    client.post("/documents", json={"source": "doc-a", "text": "Hello world from doc-a."}, headers=headers)
+    client.post("/documents", json={"source": "doc-b", "text": "Another document here."}, headers=headers)
 
     response = client.get("/health")
 
@@ -109,9 +184,11 @@ def test_health_after_ingest(client: TestClient) -> None:
 
 
 def test_ingest_document_returns_201(client: TestClient) -> None:
+    headers = auth_headers(client, "ingest@example.com")
     response = client.post(
         "/documents",
         json={"source": "test-source", "text": "FastAPI makes building APIs easy."},
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -120,12 +197,14 @@ def test_ingest_document_returns_201(client: TestClient) -> None:
 
 
 def test_ingest_document_empty_text_rejected(client: TestClient) -> None:
-    response = client.post("/documents", json={"source": "s", "text": ""})
+    headers = auth_headers(client, "empty@example.com")
+    response = client.post("/documents", json={"source": "s", "text": ""}, headers=headers)
 
     assert response.status_code == 422
 
 
 def test_ingest_file_txt(client: TestClient, tmp_path: Path) -> None:
+    headers = auth_headers(client, "file@example.com")
     text_file = tmp_path / "sample.txt"
     text_file.write_text("This is a plain text file with content for RAG indexing.")
 
@@ -133,6 +212,7 @@ def test_ingest_file_txt(client: TestClient, tmp_path: Path) -> None:
         response = client.post(
             "/documents/file",
             files={"file": ("sample.txt", file, "text/plain")},
+            headers=headers,
         )
 
     assert response.status_code == 201
@@ -143,6 +223,7 @@ def test_ingest_file_unsupported_extension_rejected(
     client: TestClient,
     tmp_path: Path,
 ) -> None:
+    headers = auth_headers(client, "unsupported@example.com")
     pdf = tmp_path / "report.pdf"
     pdf.write_bytes(b"%PDF-1.4 fake content")
 
@@ -150,15 +231,18 @@ def test_ingest_file_unsupported_extension_rejected(
         response = client.post(
             "/documents/file",
             files={"file": ("report.pdf", file, "application/pdf")},
+            headers=headers,
         )
 
     assert response.status_code == 400
 
 
 def test_search_returns_results(client: TestClient) -> None:
+    headers = auth_headers(client, "search@example.com")
     client.post(
         "/documents",
         json={"source": "rag-doc", "text": "RAG stands for Retrieval-Augmented Generation."},
+        headers=headers,
     )
 
     response = client.get("/search", params={"query": "RAG retrieval"})
@@ -175,10 +259,12 @@ def test_search_query_too_short_rejected(client: TestClient) -> None:
 
 
 def test_search_top_k_respected(client: TestClient) -> None:
+    headers = auth_headers(client, "topk@example.com")
     for index in range(5):
         client.post(
             "/documents",
             json={"source": f"doc-{index}", "text": f"Document number {index} about Python."},
+            headers=headers,
         )
 
     response = client.get("/search", params={"query": "Python", "top_k": 2})
@@ -188,9 +274,11 @@ def test_search_top_k_respected(client: TestClient) -> None:
 
 
 def test_chat_returns_answer(client: TestClient) -> None:
+    headers = auth_headers(client, "chat@example.com")
     client.post(
         "/documents",
         json={"source": "chat-doc", "text": "Python is a high-level programming language."},
+        headers=headers,
     )
 
     response = client.post("/chat", json={"question": "What is Python?"})
@@ -203,9 +291,11 @@ def test_chat_returns_answer(client: TestClient) -> None:
 
 
 def test_chat_accepts_conversation_history(client: TestClient) -> None:
+    headers = auth_headers(client, "history@example.com")
     client.post(
         "/documents",
         json={"source": "history-doc", "text": "A tuple is immutable in Python."},
+        headers=headers,
     )
 
     response = client.post(
@@ -231,12 +321,14 @@ def test_chat_question_too_short_rejected(client: TestClient) -> None:
 
 
 def test_delete_source(client: TestClient) -> None:
+    headers = auth_headers(client, "delete@example.com")
     client.post(
         "/documents",
         json={"source": "to-delete", "text": "This document will be removed."},
+        headers=headers,
     )
 
-    response = client.delete("/documents/to-delete")
+    response = client.delete("/documents/to-delete", headers=headers)
 
     assert response.status_code == 200
     assert response.json()["source"] == "to-delete"
@@ -244,7 +336,23 @@ def test_delete_source(client: TestClient) -> None:
 
 
 def test_delete_nonexistent_source_returns_zero(client: TestClient) -> None:
-    response = client.delete("/documents/does-not-exist")
+    headers = auth_headers(client, "delete-missing@example.com")
+    response = client.delete("/documents/does-not-exist", headers=headers)
 
     assert response.status_code == 200
     assert response.json()["chunks_deleted"] == 0
+
+
+def test_delete_source_requires_auth(client: TestClient) -> None:
+    response = client.delete("/documents/anything")
+
+    assert response.status_code == 401
+
+
+def test_ingest_document_requires_auth(client: TestClient) -> None:
+    response = client.post(
+        "/documents",
+        json={"source": "blocked", "text": "This should not be accepted."},
+    )
+
+    assert response.status_code == 401

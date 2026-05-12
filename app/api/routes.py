@@ -38,6 +38,10 @@ def provider_error(error: Exception) -> HTTPException:
     message = str(error)
     if "api_key" in message.lower() or "authentication" in message.lower():
         message = "AI provider authentication failed. Check OPENAI_API_KEY in environment variables."
+    elif "openai" in error.__class__.__module__.lower():
+        message = "AI provider request failed. Check provider configuration and quota."
+    else:
+        message = "The AI provider could not process this request."
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=f"AI provider request failed: {message}",
@@ -199,6 +203,11 @@ def chat_with_collection(
 
     if payload.session_id:
         session = app_store.get_chat_session(user["id"], payload.session_id)
+        if session["collection_id"] != collection_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Chat session does not belong to this collection",
+            )
     else:
         session = app_store.create_chat_session(user["id"], collection_id, payload.question[:60])
 
@@ -271,6 +280,10 @@ def create_feedback(
 ) -> FeedbackResponse:
     if payload.rating == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rating must be -1 or 1")
+    try:
+        app_store.get_chat_session(user["id"], payload.session_id)
+    except KeyError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found") from error
     feedback = app_store.save_feedback(user["id"], payload.session_id, payload.rating, payload.comment)
     return FeedbackResponse(**feedback)
 
@@ -282,6 +295,7 @@ def create_feedback(
 )
 def ingest_document(
     payload: DocumentIngestRequest,
+    _: dict = Depends(current_user),
     rag: RAGService = Depends(get_rag_service),
 ) -> DocumentIngestResponse:
     try:
@@ -298,6 +312,7 @@ def ingest_document(
 )
 async def ingest_file(
     file: UploadFile = File(...),
+    _: dict = Depends(current_user),
     rag: RAGService = Depends(get_rag_service),
 ) -> DocumentIngestResponse:
     allowed_extensions = {".txt", ".md", ".csv"}
@@ -341,6 +356,7 @@ def chat(payload: ChatRequest, rag: RAGService = Depends(get_rag_service)) -> Ch
 @router.delete("/documents/{source}", response_model=DeleteResponse)
 def delete_source(
     source: str,
+    _: dict = Depends(current_user),
     store: SQLiteVectorStore = Depends(get_vector_store),
 ) -> DeleteResponse:
     deleted = store.delete_by_source(source)

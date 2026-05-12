@@ -176,7 +176,7 @@ def home_page() -> HTMLResponse:
       <label>Email</label>
       <input id="auth-email" value="demo@example.com" />
       <label>Password</label>
-      <input id="auth-password" type="password" value="password123" />
+      <input id="auth-password" type="password" placeholder="At least 8 characters" />
       <label>Display name</label>
       <input id="auth-name" value="Demo User" />
       <div class="toolbar" style="margin-top:16px">
