@@ -82,6 +82,12 @@ def home_page() -> HTMLResponse:
       cursor: pointer;
     }
     button:hover { background: #104b5b; }
+    .secondary {
+      margin-left: 8px;
+      background: #e7ebf0;
+      color: #24303d;
+    }
+    .secondary:hover { background: #d7dde6; }
     pre {
       min-height: 120px;
       overflow: auto;
@@ -174,6 +180,7 @@ def home_page() -> HTMLResponse:
         <label for="chat-top-k">Top K</label>
         <input id="chat-top-k" type="number" min="1" max="20" value="3" />
         <button id="chat-btn">Ask</button>
+        <button id="clear-chat-btn" class="secondary">Clear Chat Context</button>
         <div id="chat-output" class="output"></div>
       </section>
     </div>
@@ -181,6 +188,7 @@ def home_page() -> HTMLResponse:
 
   <script>
     const $ = (id) => document.getElementById(id);
+    const conversationHistory = [];
 
     async function request(path, options = {}) {
       const response = await fetch(path, {
@@ -236,8 +244,12 @@ def home_page() -> HTMLResponse:
       const citations = data.citations.map((item) => `
         <div class="score">${escapeHtml(item.source)} | ${escapeHtml(item.chunk_id)} | score ${Number(item.score).toFixed(3)}</div>
       `).join("");
+      const historyNote = conversationHistory.length
+        ? `<div class="score">Using ${conversationHistory.length} previous chat message${conversationHistory.length === 1 ? "" : "s"} as conversation context.</div>`
+        : `<div class="score">No previous chat context used.</div>`;
       $("chat-output").innerHTML = `
         <p class="answer">${escapeHtml(data.answer)}</p>
+        ${historyNote}
         <strong>Citations</strong>
         ${citations || `<p class="empty">No citations returned.</p>`}
       `;
@@ -284,17 +296,26 @@ def home_page() -> HTMLResponse:
 
     $("chat-btn").addEventListener("click", async () => {
       try {
+        const question = $("question").value;
         const data = await request("/chat", {
           method: "POST",
           body: JSON.stringify({
-            question: $("question").value,
+            question,
             top_k: Number($("chat-top-k").value),
+            history: conversationHistory.slice(-10),
           }),
         });
         showChat(data);
+        conversationHistory.push({ role: "user", content: question });
+        conversationHistory.push({ role: "assistant", content: data.answer });
       } catch (error) {
         showError("chat-output", error);
       }
+    });
+
+    $("clear-chat-btn").addEventListener("click", () => {
+      conversationHistory.length = 0;
+      $("chat-output").innerHTML = `<p class="empty">Chat context cleared.</p>`;
     });
 
     checkHealth();

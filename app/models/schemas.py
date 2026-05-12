@@ -27,9 +27,15 @@ class SearchResponse(BaseModel):
     results: list[RetrievedChunk]
 
 
+class ChatMessage(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str = Field(..., min_length=1)
+
+
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=2)
     top_k: int = Field(default=4, ge=1, le=20)
+    history: list[ChatMessage] = Field(default_factory=list, max_length=10)
 
 
 class Citation(BaseModel):

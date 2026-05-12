@@ -159,6 +159,28 @@ def test_chat_returns_answer(client: TestClient) -> None:
     assert isinstance(response.json()["context"], list)
 
 
+def test_chat_accepts_conversation_history(client: TestClient) -> None:
+    client.post(
+        "/documents",
+        json={"source": "history-doc", "text": "A tuple is immutable in Python."},
+    )
+
+    response = client.post(
+        "/chat",
+        json={
+            "question": "Is it mutable?",
+            "top_k": 2,
+            "history": [
+                {"role": "user", "content": "Tell me about Python tuples."},
+                {"role": "assistant", "content": "Python tuples are ordered collections."},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["citations"]
+
+
 def test_chat_question_too_short_rejected(client: TestClient) -> None:
     response = client.post("/chat", json={"question": "x"})
 

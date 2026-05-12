@@ -99,7 +99,7 @@ def search(
 @router.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest, rag: RAGService = Depends(get_rag_service)) -> ChatResponse:
     try:
-        return rag.answer(question=payload.question, top_k=payload.top_k)
+        return rag.answer(question=payload.question, top_k=payload.top_k, history=payload.history)
     except Exception as error:
         raise provider_error(error) from error
 

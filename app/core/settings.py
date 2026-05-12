@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=900, ge=200, le=4000)
     chunk_overlap: int = Field(default=150, ge=0, le=1000)
     top_k: int = Field(default=4, ge=1, le=20)
+    auto_seed_knowledge: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

@@ -1,7 +1,7 @@
 import hashlib
 from typing import Any
 
-from app.models.schemas import ChatResponse, Citation, RetrievedChunk
+from app.models.schemas import ChatMessage, ChatResponse, Citation, RetrievedChunk
 from app.services.chunker import TextChunker
 from app.services.embeddings import EmbeddingProvider
 from app.services.llm import LLMProvider
@@ -45,9 +45,15 @@ class RAGService:
         [query_embedding] = self.embedder.embed([query])
         return self.store.search(query_embedding=query_embedding, top_k=top_k or self.default_top_k)
 
-    def answer(self, question: str, top_k: int | None = None) -> ChatResponse:
-        context = self.search(question, top_k=top_k)
-        answer = self.llm.answer(question, context)
+    def answer(
+        self,
+        question: str,
+        top_k: int | None = None,
+        history: list[ChatMessage] | None = None,
+    ) -> ChatResponse:
+        retrieval_query = self._build_retrieval_query(question, history or [])
+        context = self.search(retrieval_query, top_k=top_k)
+        answer = self.llm.answer(self._build_generation_question(question, history or []), context)
         citations = [
             Citation(source=item.source, chunk_id=item.id, score=item.score)
             for item in context
@@ -63,3 +69,27 @@ class RAGService:
     def _chunk_id(source: str, chunk_index: int, text: str) -> str:
         digest = hashlib.sha256(f"{source}:{chunk_index}:{text}".encode("utf-8")).hexdigest()
         return digest[:24]
+
+    @staticmethod
+    def _build_retrieval_query(question: str, history: list[ChatMessage]) -> str:
+        if not history:
+            return question
+        recent_history = "\n".join(
+            f"{message.role}: {message.content}"
+            for message in history[-6:]
+        )
+        return f"{recent_history}\nuser: {question}"
+
+    @staticmethod
+    def _build_generation_question(question: str, history: list[ChatMessage]) -> str:
+        if not history:
+            return question
+        recent_history = "\n".join(
+            f"{message.role}: {message.content}"
+            for message in history[-6:]
+        )
+        return (
+            "Use this recent conversation to understand references like 'it', "
+            "'that', or 'the previous topic'.\n"
+            f"{recent_history}\nCurrent question: {question}"
+        )
