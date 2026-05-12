@@ -302,7 +302,7 @@ def home_page() -> HTMLResponse:
         <div id="chat-log" class="chat-log">
           <div class="empty-chat">
             <h2>What should we explore?</h2>
-            <p class="muted">Select or create a collection, ingest a document, then ask a question. Your answers will include citations.</p>
+            <p class="muted">You can ask right away. If no collection exists, the app will create one automatically. For best answers, add a document from the Documents page first.</p>
           </div>
         </div>
         <div class="composer">
@@ -500,6 +500,26 @@ def home_page() -> HTMLResponse:
       `).join("") || `<p class="muted">No documents in this collection.</p>`;
     }
 
+    async function ensureCollection() {
+      if (state.selectedCollectionId) return state.selectedCollectionId;
+      let collection = state.collections[0];
+      if (!collection) {
+        collection = await api("/collections", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "My Knowledge Base",
+            description: "Default collection created automatically",
+          }),
+        });
+        await loadMetrics();
+      }
+      state.selectedCollectionId = collection.id;
+      localStorage.setItem("kb_collection", collection.id);
+      await loadCollections();
+      await loadDocuments();
+      return collection.id;
+    }
+
     function addBubble(role, content) {
       const empty = document.querySelector(".empty-chat");
       if (empty) empty.remove();
@@ -564,14 +584,10 @@ def home_page() -> HTMLResponse:
     });
 
     $("ingest-doc-btn").addEventListener("click", async () => {
-      if (!state.selectedCollectionId) {
-        showAppError(new Error("Create or select a collection first."));
-        renderPage("collections");
-        return;
-      }
       try {
         clearErrors();
-        await api(`/collections/${state.selectedCollectionId}/documents`, {
+        const collectionId = await ensureCollection();
+        await api(`/collections/${collectionId}/documents`, {
           method: "POST",
           body: JSON.stringify({ source: $("document-source").value, text: $("document-text").value }),
         });
@@ -586,22 +602,18 @@ def home_page() -> HTMLResponse:
       $("chat-log").innerHTML = `
         <div class="empty-chat">
           <h2>New chat</h2>
-          <p class="muted">Ask something about the selected collection.</p>
+          <p class="muted">Ask something about your documents. A default collection will be created if needed.</p>
         </div>`;
       renderPage("chat");
     });
 
     $("ask-btn").addEventListener("click", async () => {
-      if (!state.selectedCollectionId) {
-        showAppError(new Error("Create or select a collection first."));
-        renderPage("collections");
-        return;
-      }
       const question = $("chat-question").value;
       addBubble("user", question);
       try {
         clearErrors();
-        const data = await api(`/collections/${state.selectedCollectionId}/chat`, {
+        const collectionId = await ensureCollection();
+        const data = await api(`/collections/${collectionId}/chat`, {
           method: "POST",
           body: JSON.stringify({ question, session_id: state.sessionId, top_k: 4 }),
         });
