@@ -108,6 +108,8 @@ def test_authenticated_collection_chat_flow(client: TestClient) -> None:
     assert chat.status_code == 200
     assert chat.json()["session_id"]
     assert chat.json()["citations"]
+    assert chat.json()["citations"][0]["source"] == "tuple-note"
+    assert collection_id not in chat.json()["answer"]
 
 
 def test_login_token_can_access_dashboard(client: TestClient) -> None:

@@ -578,6 +578,12 @@ def home_page() -> HTMLResponse:
       $("chat-log").scrollTop = $("chat-log").scrollHeight;
     }
 
+    function formatCitationLine(citations) {
+      const sources = [...new Set(citations.map((item) => item.source).filter(Boolean))];
+      if (!sources.length) return "No citations found.";
+      return `Sources: ${sources.slice(0, 3).join(", ")}`;
+    }
+
     $("demo-btn").addEventListener("click", async () => {
       try {
         clearErrors();
@@ -674,7 +680,7 @@ def home_page() -> HTMLResponse:
         });
         state.sessionId = data.session_id;
         localStorage.setItem("kb_session", data.session_id);
-        addBubble("assistant", `${data.answer}\\n\\nCitations: ${data.citations.length}`);
+        addBubble("assistant", `${data.answer}\\n\\n${formatCitationLine(data.citations)}`);
         await loadMetrics();
       } catch (error) {
         addBubble("assistant", error.message || String(error));

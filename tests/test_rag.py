@@ -43,6 +43,7 @@ def test_rag_answer_contains_citations(tmp_path: Path) -> None:
     assert response.citations
     assert response.context
     assert "retrieved context" in response.answer
+    assert "Based on the best matching source" not in response.answer
 
 
 def test_local_answer_extracts_relevant_sentence(tmp_path: Path) -> None:
@@ -110,3 +111,18 @@ def test_retrieves_advanced_fastapi_sql_training(tmp_path: Path) -> None:
     assert response.citations
     assert response.citations[0].source == "advanced-python-fastapi-sql"
     assert "parameterized" in response.answer or "SQL injection" in response.answer
+
+
+def test_collection_citation_uses_public_source_name(tmp_path: Path) -> None:
+    service = build_service(tmp_path / "rag.sqlite3")
+    service.ingest_text(
+        "This recruiter demo explains how the AI RAG Backend System works. The RAG pipeline chunks documents, stores embeddings, retrieves similar context, and returns cited answers.",
+        source="user-id:collection-id:recruiter-demo-guide",
+        metadata={"source_name": "recruiter-demo-guide"},
+    )
+
+    response = service.answer("How does it work?", top_k=1)
+
+    assert response.citations[0].source == "recruiter-demo-guide"
+    assert "collection-id" not in response.answer
+    assert "splitting documents into chunks" in response.answer

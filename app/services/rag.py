@@ -65,7 +65,7 @@ class RAGService:
         context = self.search(retrieval_query, top_k=top_k, metadata_filter=metadata_filter)
         answer = self.llm.answer(self._build_generation_question(question, history or []), context)
         citations = [
-            Citation(source=item.source, chunk_id=item.id, score=item.score)
+            Citation(source=self._display_source(item), chunk_id=item.id, score=item.score)
             for item in context
         ]
         return ChatResponse(
@@ -79,6 +79,11 @@ class RAGService:
     def _chunk_id(source: str, chunk_index: int, text: str) -> str:
         digest = hashlib.sha256(f"{source}:{chunk_index}:{text}".encode("utf-8")).hexdigest()
         return digest[:24]
+
+    @staticmethod
+    def _display_source(chunk: RetrievedChunk) -> str:
+        source_name = chunk.metadata.get("source_name")
+        return str(source_name or chunk.source)
 
     @staticmethod
     def _build_retrieval_query(question: str, history: list[ChatMessage]) -> str:

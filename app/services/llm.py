@@ -18,11 +18,10 @@ class LocalExtractiveLLMProvider(LLMProvider):
         if not context:
             return "I do not have enough indexed context to answer that yet."
 
-        sources = ", ".join(dict.fromkeys(item.source for item in context))
         answer = self._answer_common_question(question, context)
         if answer is None:
             answer = self._extract_relevant_excerpt(question, context)
-        return f"Based on the best matching source ({sources}), the answer is: {answer}"
+        return answer
 
     @staticmethod
     def _answer_common_question(question: str, context: list[RetrievedChunk]) -> str | None:
@@ -49,6 +48,13 @@ class LocalExtractiveLLMProvider(LLMProvider):
                 "I can ingest documents, retrieve relevant chunks, answer questions with "
                 "citations, explain Python basics, and describe this RAG project."
             )
+        if any(phrase in question_lower for phrase in ("how does it work", "how does this work", "how it works")):
+            if "rag pipeline" in all_text.lower() or "retrieves similar context" in all_text.lower():
+                return (
+                    "It works by splitting documents into chunks, creating embeddings for those "
+                    "chunks, storing them in SQLite, retrieving the most relevant context for a "
+                    "question, and generating an answer with citations."
+                )
 
         if "project-readme" in source_names:
             if any(phrase in question_lower for phrase in ("what is this", "what is it", "what does this do")):
