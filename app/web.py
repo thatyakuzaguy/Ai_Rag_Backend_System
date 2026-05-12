@@ -335,6 +335,13 @@ def home_page() -> HTMLResponse:
 
     async function loadCollections() {
       state.collections = await api("/collections");
+      if (
+        state.collections.length &&
+        !state.collections.some((collection) => collection.id === state.selectedCollectionId)
+      ) {
+        state.selectedCollectionId = state.collections[0].id;
+        localStorage.setItem("kb_collection", state.selectedCollectionId);
+      }
       $("collection-list").innerHTML = state.collections.map((collection) => `
         <div class="item ${collection.id === state.selectedCollectionId ? "active" : ""}">
           <h3>${escapeHtml(collection.name)}</h3>
@@ -349,7 +356,7 @@ def home_page() -> HTMLResponse:
           state.sessionId = null;
           localStorage.setItem("kb_collection", state.selectedCollectionId);
           localStorage.removeItem("kb_session");
-          renderCollections();
+          await loadCollections();
           await loadDocuments();
         });
       });
@@ -422,6 +429,7 @@ def home_page() -> HTMLResponse:
         state.selectedCollectionId = collection.id;
         localStorage.setItem("kb_collection", collection.id);
         await refreshAll();
+        await loadDocuments();
       } catch (error) { showAppError(error); }
     });
 
