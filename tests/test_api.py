@@ -356,3 +356,69 @@ def test_ingest_document_requires_auth(client: TestClient) -> None:
     )
 
     assert response.status_code == 401
+
+
+def test_login_rejects_sql_injection_payload(client: TestClient) -> None:
+    client.post(
+        "/auth/register",
+        json={
+            "email": "sqli@example.com",
+            "password": "password123",
+            "display_name": "SQLi User",
+        },
+    )
+
+    response = client.post(
+        "/auth/login",
+        json={"email": "' OR '1'='1@example.com", "password": "' OR '1'='1"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_collection_id_sql_injection_payload_is_not_executed(client: TestClient) -> None:
+    headers = auth_headers(client, "collection-sqli@example.com")
+    client.post("/collections", json={"name": "Safe Collection"}, headers=headers)
+
+    response = client.get(
+        "/collections/' OR '1'='1/documents",
+        headers=headers,
+    )
+
+    assert response.status_code == 404
+    collections = client.get("/collections", headers=headers)
+    assert collections.status_code == 200
+    assert len(collections.json()) == 1
+
+
+def test_document_source_sql_injection_payload_is_stored_as_text(client: TestClient) -> None:
+    headers = auth_headers(client, "document-sqli@example.com")
+    collection = client.post("/collections", json={"name": "Safe Docs"}, headers=headers).json()
+    payload = "note'); DROP TABLE users; --"
+
+    response = client.post(
+        f"/collections/{collection['id']}/documents",
+        json={"source": payload, "text": "SQL injection strings should be treated as plain text."},
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    documents = client.get(f"/collections/{collection['id']}/documents", headers=headers)
+    assert documents.status_code == 200
+    assert documents.json()[0]["source"] == payload
+
+
+def test_delete_source_sql_injection_payload_does_not_drop_data(client: TestClient) -> None:
+    headers = auth_headers(client, "delete-sqli@example.com")
+    client.post(
+        "/documents",
+        json={"source": "safe-source", "text": "Safe content."},
+        headers=headers,
+    )
+
+    response = client.delete("/documents/safe-source' OR '1'='1", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["chunks_deleted"] == 0
+    health = client.get("/health")
+    assert health.json()["chunks_indexed"] >= 1
