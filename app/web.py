@@ -9,687 +9,307 @@ def home_page() -> HTMLResponse:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KnowledgeBase AI</title>
+  <title>AI RAG Backend System</title>
   <style>
     :root {
       --bg: #fff8f8;
-      --panel: rgba(255, 255, 255, 0.92);
-      --panel-solid: #ffffff;
       --ink: #22191d;
-      --muted: #7a6670;
-      --line: #ead5dc;
+      --muted: #725d67;
+      --line: #ecd6de;
       --brand: #b84f74;
-      --brand-dark: #8f3457;
+      --brand-dark: #803450;
       --soft: #fff0f4;
-      --sidebar: #2a2027;
-      --sidebar-soft: #3a2933;
-      --danger: #b42318;
+      --panel: rgba(255, 255, 255, 0.9);
+      --night: #2b2027;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background:
-        linear-gradient(135deg, rgba(255, 245, 247, 0.92), rgba(255, 252, 248, 0.96)),
-        var(--bg);
+        radial-gradient(circle at 84% 10%, rgba(232, 135, 164, 0.24), transparent 26%),
+        linear-gradient(135deg, #fff7f8 0%, #fffdf9 48%, #fff1f5 100%);
     }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; }
-    button, input, textarea { font: inherit; }
-    button {
-      min-height: 40px;
-      border: 0;
-      border-radius: 8px;
-      padding: 0 14px;
-      background: var(--brand);
-      color: #fff;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    button:hover { background: var(--brand-dark); }
-    button.secondary { background: #f3e6eb; color: #3d2933; }
-    button.secondary:hover { background: #ead5dc; }
-    input, textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 11px 12px;
-      background: #fffdfd;
-      color: var(--ink);
-      outline-color: #d97898;
-    }
-    textarea { min-height: 150px; resize: vertical; }
-    label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 800; color: #5f4350; }
-    .hidden { display: none !important; }
-    .muted { color: var(--muted); }
-    .error { color: var(--danger); }
-    .petals {
+    a { color: inherit; }
+    .wrap { width: min(1120px, calc(100% - 36px)); margin: 0 auto; }
+    .petal {
       position: fixed;
-      inset: 0;
+      width: 16px;
+      height: 24px;
+      border-radius: 70% 30% 70% 30%;
+      background: rgba(232, 135, 164, 0.22);
       pointer-events: none;
-      overflow: hidden;
       z-index: 0;
     }
-    .petal {
-      position: absolute;
-      width: 15px;
-      height: 22px;
-      border-radius: 70% 30% 70% 30%;
-      background: rgba(232, 135, 164, 0.24);
-      transform: rotate(28deg);
-    }
-    .petal:nth-child(1) { left: 8%; top: 12%; }
-    .petal:nth-child(2) { left: 72%; top: 10%; transform: rotate(-18deg); }
-    .petal:nth-child(3) { left: 87%; top: 48%; }
-    .petal:nth-child(4) { left: 18%; top: 78%; transform: rotate(-38deg); }
-    .petal:nth-child(5) { left: 54%; top: 86%; }
-    .auth {
+    .p1 { left: 7%; top: 15%; transform: rotate(24deg); }
+    .p2 { right: 11%; top: 22%; transform: rotate(-18deg); }
+    .p3 { right: 7%; top: 66%; transform: rotate(48deg); }
+    header {
       position: relative;
       z-index: 1;
-      max-width: 1080px;
-      margin: 44px auto;
+      padding: 22px 0;
+      border-bottom: 1px solid rgba(236, 214, 222, 0.7);
+      background: rgba(255, 248, 248, 0.72);
+      backdrop-filter: blur(12px);
+    }
+    nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { font-weight: 950; font-size: 19px; color: var(--night); }
+    .links { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 850;
+      background: var(--brand);
+      color: white;
+    }
+    .btn:hover { background: var(--brand-dark); }
+    .btn.secondary { background: #f2e3e9; color: #392832; }
+    main { position: relative; z-index: 1; }
+    .hero {
+      min-height: 560px;
       display: grid;
-      grid-template-columns: 1fr 430px;
-      gap: 24px;
-      padding: 0 20px;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 28px;
+      align-items: center;
+      padding: 42px 0 32px;
     }
-    .auth-hero {
-      min-height: 500px;
-      padding: 34px;
-      border-radius: 14px;
-      background:
-        linear-gradient(135deg, rgba(42, 32, 39, 0.94), rgba(91, 50, 66, 0.9));
-      color: #fff7fa;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 24px 70px rgba(91, 50, 66, 0.18);
-    }
-    .brand { font-size: 22px; font-weight: 950; letter-spacing: 0; }
-    .auth-hero h1 { margin: 18px 0 12px; font-size: clamp(40px, 6vw, 64px); line-height: 0.98; }
-    .tagline { color: #f4dce5; line-height: 1.55; max-width: 620px; }
-    .auth-card, .panel {
-      background: var(--panel);
+    .eyebrow {
+      display: inline-flex;
+      padding: 7px 11px;
       border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 22px;
-      box-shadow: 0 18px 45px rgba(90, 48, 64, 0.08);
-      backdrop-filter: blur(10px);
-    }
-    .app {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: 288px minmax(0, 1fr);
-      min-height: 100vh;
-    }
-    aside {
-      background:
-        linear-gradient(180deg, rgba(42, 32, 39, 0.98), rgba(52, 37, 47, 0.98));
-      color: #fff7fa;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .new-chat {
-      width: 100%;
-      background: #fff7fa;
-      color: #3a2933;
-    }
-    nav { display: grid; gap: 8px; }
-    .nav-btn {
-      width: 100%;
-      text-align: left;
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
-      color: #f7e8ee;
-    }
-    .nav-btn.active, .nav-btn:hover { background: var(--sidebar-soft); }
-    .sidebar-footer {
-      margin-top: auto;
-      display: grid;
-      gap: 8px;
-      color: #dec4ce;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      color: var(--brand-dark);
+      font-weight: 900;
       font-size: 13px;
     }
-    main {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      min-width: 0;
-    }
-    .topbar {
-      height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 0 24px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(10px);
-    }
-    .page { padding: 24px; min-width: 0; }
-    h1, h2, h3 { margin: 0; }
-    h1 { font-size: 26px; }
-    h2 { font-size: 20px; margin-bottom: 14px; }
-    h3 { font-size: 15px; margin-bottom: 6px; }
-    .grid { display: grid; gap: 16px; }
-    .cols-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .metric strong { display: block; font-size: 30px; }
-    .metric span { color: var(--muted); font-size: 13px; }
-    .item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 13px;
-      background: #fffdfd;
-    }
-    .item.active { border-color: var(--brand); background: var(--soft); }
-    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .chat-page {
-      height: calc(100vh - 72px);
-      display: grid;
-      grid-template-rows: 1fr auto;
-      padding: 0;
-    }
-    .chat-log {
-      overflow: auto;
-      padding: 28px max(24px, 12vw);
-      display: grid;
-      align-content: start;
-      gap: 16px;
-    }
-    .empty-chat {
-      align-self: center;
-      justify-self: center;
-      text-align: center;
-      max-width: 620px;
-      padding: 30px;
-    }
-    .empty-chat h2 { font-size: 36px; margin-bottom: 10px; }
-    .bubble {
+    h1 {
+      margin: 18px 0 14px;
       max-width: 760px;
-      padding: 14px 16px;
+      font-size: clamp(44px, 7vw, 82px);
+      line-height: 0.94;
+      letter-spacing: 0;
+    }
+    .lead {
+      max-width: 700px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.65;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+    .terminal {
       border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #49353f;
+      background: var(--night);
+      box-shadow: 0 24px 70px rgba(90, 48, 64, 0.2);
+    }
+    .terminal-bar {
+      display: flex;
+      gap: 7px;
+      padding: 14px;
+      background: #3b2c35;
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; background: #e88bab; }
+    pre {
+      margin: 0;
+      padding: 22px;
+      overflow: auto;
+      color: #fff7fa;
       line-height: 1.55;
-      white-space: pre-wrap;
-      box-shadow: 0 8px 22px rgba(74, 38, 53, 0.06);
+      font-size: 14px;
     }
-    .bubble.user { justify-self: end; background: var(--brand); color: white; border-bottom-right-radius: 4px; }
-    .bubble.assistant { justify-self: start; background: var(--panel-solid); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
-    .composer {
-      padding: 18px max(24px, 12vw) 24px;
-      background: linear-gradient(180deg, rgba(255,248,248,0.2), rgba(255,248,248,0.96));
+    .section { padding: 34px 0; }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
     }
-    .composer-box {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      padding: 10px;
+    .section-title h2 { margin: 0; font-size: clamp(28px, 4vw, 42px); }
+    .section-title p { margin: 0; max-width: 560px; color: var(--muted); line-height: 1.6; }
+    .grid { display: grid; gap: 16px; }
+    .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card {
+      min-height: 150px;
+      padding: 20px;
       border: 1px solid var(--line);
-      border-radius: 16px;
-      background: white;
-      box-shadow: 0 18px 40px rgba(74, 38, 53, 0.08);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: 0 18px 44px rgba(90, 48, 64, 0.08);
     }
-    .composer-box input { border: 0; }
-    @media (max-width: 980px) {
-      .auth, .app, .cols-2, .cols-4 { grid-template-columns: 1fr; }
-      aside { min-height: auto; }
-      .chat-page { height: auto; min-height: calc(100vh - 72px); }
-      .chat-log, .composer { padding-left: 18px; padding-right: 18px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card p, .card li { color: var(--muted); line-height: 1.58; }
+    .card ul { margin: 0; padding-left: 18px; }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .step {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffdfd;
+      padding: 16px;
+    }
+    .step strong { display: block; margin-bottom: 8px; color: var(--brand-dark); }
+    .stack {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      font-weight: 850;
+      color: #4d3340;
+    }
+    footer {
+      margin-top: 42px;
+      padding: 28px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    @media (max-width: 900px) {
+      .hero, .cols-3, .cols-2, .flow { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .section-title { display: block; }
+      nav { align-items: flex-start; flex-direction: column; }
     }
   </style>
 </head>
 <body>
-  <div class="petals">
-    <span class="petal"></span><span class="petal"></span><span class="petal"></span><span class="petal"></span><span class="petal"></span>
-  </div>
+  <span class="petal p1"></span><span class="petal p2"></span><span class="petal p3"></span>
+  <header>
+    <nav class="wrap">
+      <div class="brand">AI RAG Backend System</div>
+      <div class="links">
+        <a class="btn secondary" href="/docs">Swagger Docs</a>
+        <a class="btn secondary" href="/health">Health Check</a>
+        <a class="btn" href="https://github.com/thatyakuzaguy/Ai_Rag_Backend_System">GitHub</a>
+      </div>
+    </nav>
+  </header>
 
-  <section id="auth-view" class="auth">
-    <div class="auth-hero">
+  <main>
+    <section class="wrap hero">
       <div>
-        <div class="brand">KnowledgeBase AI</div>
-        <h1>Sakura workspace for grounded answers.</h1>
-        <p class="tagline">A ChatGPT-style RAG dashboard for private collections, document ingestion, citations, and technical learning.</p>
+        <span class="eyebrow">FastAPI RAG portfolio project</span>
+        <h1>Backend system for searchable, cited knowledge.</h1>
+        <p class="lead">
+          A deployed Retrieval-Augmented Generation API with authentication, collections,
+          document ingestion, vector search, conversation storage, feedback, tests, and
+          Render-ready Docker deployment.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" href="/docs">Inspect the API</a>
+          <a class="btn secondary" href="https://github.com/thatyakuzaguy/Ai_Rag_Backend_System">View source</a>
+        </div>
       </div>
-      <p class="tagline">Free local AI mode by default. Optional OpenAI mode when you want richer generation.</p>
-    </div>
-    <div class="auth-card">
-      <h2>Access workspace</h2>
-      <p class="muted">Create an account or sign in. If Render redeploys, you may need to sign in again.</p>
-      <label>Email</label>
-      <input id="auth-email" value="demo@example.com" />
-      <label>Password</label>
-      <input id="auth-password" type="password" placeholder="At least 8 characters" />
-      <label>Display name</label>
-      <input id="auth-name" value="Demo User" />
-      <div class="toolbar" style="margin-top:16px">
-        <button id="demo-btn">Start guided demo</button>
-        <button id="register-btn">Create account</button>
-        <button id="login-btn" class="secondary">Sign in</button>
+      <div class="terminal" aria-label="API preview">
+        <div class="terminal-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+<pre>POST /auth/register
+POST /collections
+POST /collections/{id}/documents
+POST /collections/{id}/chat
+
+Security:
+- bearer tokens
+- scoped collections
+- parameterized SQL
+- input validation
+- regression tests</pre>
       </div>
-      <p id="auth-error" class="error"></p>
-    </div>
-  </section>
+    </section>
 
-  <section id="app-view" class="app hidden">
-    <aside>
-      <div>
-        <div class="brand">KnowledgeBase AI</div>
-        <p class="tagline">Sakura RAG workspace</p>
+    <section class="wrap section">
+      <div class="section-title">
+        <h2>What It Can Do</h2>
+        <p>The homepage is a showcase, while the backend remains fully testable through Swagger and the repository.</p>
       </div>
-      <button id="new-chat-btn" class="new-chat">New chat</button>
-      <nav>
-        <button class="nav-btn active" data-page="chat">Chat</button>
-        <button class="nav-btn" data-page="collections">Collections</button>
-        <button class="nav-btn" data-page="documents">Documents</button>
-        <button class="nav-btn" data-page="settings">Settings</button>
-      </nav>
-      <div class="sidebar-footer">
-        <span id="selected-collection-label">No collection selected</span>
-        <a style="color:#fff7fa" href="/docs">API Docs</a>
-        <button id="logout-btn" class="secondary">Log out</button>
+      <div class="grid cols-3">
+        <article class="card">
+          <h3>Ingest Knowledge</h3>
+          <p>Accepts raw text and files, chunks content with overlap, and stores metadata for later retrieval.</p>
+        </article>
+        <article class="card">
+          <h3>Retrieve Context</h3>
+          <p>Embeds queries, compares vectors with cosine similarity, and returns the most relevant chunks.</p>
+        </article>
+        <article class="card">
+          <h3>Answer With Citations</h3>
+          <p>Combines retrieved context with local or OpenAI providers and returns source-backed responses.</p>
+        </article>
       </div>
-    </aside>
+    </section>
 
-    <main>
-      <div class="topbar">
-        <div>
-          <h1 id="page-title">Chat</h1>
-          <p id="user-line" class="muted"></p>
-        </div>
-        <span id="app-error" class="error"></span>
+    <section class="wrap section">
+      <div class="section-title">
+        <h2>Architecture</h2>
+        <p>Designed as a backend-first system with clean service boundaries and realistic portfolio features.</p>
       </div>
+      <div class="flow">
+        <div class="step"><strong>1. API</strong>FastAPI routes validate requests and expose REST endpoints.</div>
+        <div class="step"><strong>2. Services</strong>RAG, auth, storage, and provider logic stay separated.</div>
+        <div class="step"><strong>3. Storage</strong>SQLite persists users, tokens, collections, chats, and vectors.</div>
+        <div class="step"><strong>4. Retrieval</strong>Embeddings and filters isolate the correct collection context.</div>
+        <div class="step"><strong>5. Response</strong>Answers include citations and stored conversation history.</div>
+      </div>
+    </section>
 
-      <section id="page-chat" class="page chat-page">
-        <div id="chat-log" class="chat-log">
-          <div class="empty-chat">
-            <h2>What should we explore?</h2>
-            <p class="muted">You can ask right away. If no collection exists, the app will create one automatically. For best answers, add a document from the Documents page first.</p>
-          </div>
-        </div>
-        <div class="composer">
-          <div class="composer-box">
-            <input id="chat-question" value="How do I prevent SQL injection in FastAPI?" />
-            <button id="ask-btn">Ask</button>
-          </div>
-        </div>
-      </section>
+    <section class="wrap section">
+      <div class="grid cols-2">
+        <article class="card">
+          <h3>Security Work</h3>
+          <ul>
+            <li>Protected write endpoints with bearer authentication.</li>
+            <li>Hashed API tokens and password hashing.</li>
+            <li>Collection ownership checks for multi-user isolation.</li>
+            <li>Parameterized SQL with injection regression tests.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Engineering Proof</h3>
+          <ul>
+            <li>Pytest coverage for API, RAG behavior, auth, and SQL safety.</li>
+            <li>Ruff linting and compile checks.</li>
+            <li>Dockerfile configured for Render deployment.</li>
+            <li>Free local provider mode plus optional OpenAI provider mode.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
 
-      <section id="page-collections" class="page hidden">
-        <div class="grid cols-4" style="margin-bottom:16px">
-          <div class="panel metric"><strong id="metric-collections">0</strong><span>Collections</span></div>
-          <div class="panel metric"><strong id="metric-documents">0</strong><span>Documents</span></div>
-          <div class="panel metric"><strong id="metric-chats">0</strong><span>Chats</span></div>
-          <div class="panel metric"><strong id="metric-messages">0</strong><span>Messages</span></div>
-        </div>
-        <div class="grid cols-2">
-          <div class="panel">
-            <h2>Create collection</h2>
-            <label>Name</label>
-            <input id="collection-name" value="Advanced Backend Notes" />
-            <label>Description</label>
-            <input id="collection-description" value="Python, FastAPI, SQL, and RAG notes" />
-            <button id="create-collection-btn">Create collection</button>
-          </div>
-          <div class="panel">
-            <h2>Your collections</h2>
-            <div id="collection-list" class="grid"></div>
-          </div>
-        </div>
-      </section>
+    <section class="wrap section">
+      <div class="section-title">
+        <h2>Tech Stack</h2>
+        <p>Simple, inspectable tools chosen for a portfolio demo that can run without paid infrastructure.</p>
+      </div>
+      <div class="stack">
+        <span class="pill">Python</span>
+        <span class="pill">FastAPI</span>
+        <span class="pill">Pydantic</span>
+        <span class="pill">SQLite</span>
+        <span class="pill">Vector Search</span>
+        <span class="pill">Pytest</span>
+        <span class="pill">Ruff</span>
+        <span class="pill">Docker</span>
+        <span class="pill">Render</span>
+      </div>
+    </section>
+  </main>
 
-      <section id="page-documents" class="page hidden">
-        <div class="grid cols-2">
-          <div class="panel">
-            <h2>Ingest document</h2>
-            <label>Source</label>
-            <input id="document-source" value="advanced-note" />
-            <label>Text</label>
-            <textarea id="document-text">FastAPI routes should stay thin. Use services for business logic. Prevent SQL injection with parameterized queries.</textarea>
-            <button id="ingest-doc-btn">Ingest into selected collection</button>
-          </div>
-          <div class="panel">
-            <h2>Collection documents</h2>
-            <div id="doc-list" class="grid"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="page-settings" class="page hidden">
-        <div class="panel">
-          <h2>Settings</h2>
-          <p class="muted">This demo stores the bearer token in browser localStorage. If Render redeploys or the database resets, sign in again.</p>
-          <button id="clear-local-btn" class="secondary">Clear local browser session</button>
-        </div>
-      </section>
-    </main>
-  </section>
-
-  <script>
-    const state = {
-      token: localStorage.getItem("kb_token"),
-      user: JSON.parse(localStorage.getItem("kb_user") || "null"),
-      collections: [],
-      selectedCollectionId: localStorage.getItem("kb_collection"),
-      sessionId: localStorage.getItem("kb_session"),
-      page: "chat",
-    };
-    const $ = (id) => document.getElementById(id);
-    const demoDocument = [
-      "This recruiter demo collection explains how the AI RAG Backend System works.",
-      "The backend is built with FastAPI, Pydantic schemas, service-layer separation, and SQLite persistence.",
-      "The RAG pipeline chunks documents, creates embeddings, stores vectors, retrieves similar context, and returns cited answers.",
-      "SQL injection is prevented by parameterized SQLite queries instead of string-built SQL.",
-      "The authenticated workspace supports collections, document ingestion, chat sessions, conversation history, and feedback.",
-      "Python projects should keep route handlers thin, validate inputs, isolate business logic in services, and test important behavior with Pytest.",
-    ].join("\\n");
-
-    async function api(path, options = {}) {
-      const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-      if (state.token) headers.Authorization = `Bearer ${state.token}`;
-      const response = await fetch(path, { ...options, headers });
-      const text = await response.text();
-      let body;
-      try { body = JSON.parse(text); } catch { body = text; }
-      if (response.status === 401) {
-        clearSession();
-        throw new Error("Your session expired or the server was redeployed. Please sign in again.");
-      }
-      if (!response.ok) throw new Error(body.detail || body || `HTTP ${response.status}`);
-      return body;
-    }
-
-    function showAppError(error) { $("app-error").textContent = error.message || String(error); }
-    function showAuthError(error) { $("auth-error").textContent = error.message || String(error); }
-    function clearErrors() { $("app-error").textContent = ""; $("auth-error").textContent = ""; }
-    function escapeHtml(value) {
-      return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-    }
-
-    function setAuth(auth) {
-      state.token = auth.token;
-      state.user = auth.user;
-      localStorage.setItem("kb_token", auth.token);
-      localStorage.setItem("kb_user", JSON.stringify(auth.user));
-      renderShell();
-      refreshAll();
-    }
-
-    function clearSession() {
-      localStorage.removeItem("kb_token");
-      localStorage.removeItem("kb_user");
-      localStorage.removeItem("kb_collection");
-      localStorage.removeItem("kb_session");
-      state.token = null;
-      state.user = null;
-      state.collections = [];
-      state.selectedCollectionId = null;
-      state.sessionId = null;
-      renderShell();
-    }
-
-    function renderShell() {
-      $("auth-view").classList.toggle("hidden", Boolean(state.token));
-      $("app-view").classList.toggle("hidden", !state.token);
-      if (state.user) $("user-line").textContent = `${state.user.display_name} - ${state.user.email}`;
-      renderPage(state.page);
-    }
-
-    function renderPage(page) {
-      state.page = page;
-      const titles = { chat: "Chat", collections: "Collections", documents: "Documents", settings: "Settings" };
-      $("page-title").textContent = titles[page];
-      ["chat", "collections", "documents", "settings"].forEach((name) => {
-        $(`page-${name}`).classList.toggle("hidden", name !== page);
-      });
-      document.querySelectorAll(".nav-btn").forEach((button) => {
-        button.classList.toggle("active", button.dataset.page === page);
-      });
-    }
-
-    async function refreshAll() {
-      if (!state.token) return;
-      await Promise.all([loadMetrics(), loadCollections()]);
-      if (state.selectedCollectionId) await loadDocuments();
-    }
-
-    async function loadMetrics() {
-      const data = await api("/dashboard");
-      $("metric-collections").textContent = data.collections;
-      $("metric-documents").textContent = data.documents;
-      $("metric-chats").textContent = data.chats;
-      $("metric-messages").textContent = data.messages;
-    }
-
-    async function loadCollections() {
-      state.collections = await api("/collections");
-      if (
-        state.collections.length &&
-        !state.collections.some((collection) => collection.id === state.selectedCollectionId)
-      ) {
-        state.selectedCollectionId = state.collections[0].id;
-        localStorage.setItem("kb_collection", state.selectedCollectionId);
-      }
-      $("collection-list").innerHTML = state.collections.map((collection) => `
-        <div class="item ${collection.id === state.selectedCollectionId ? "active" : ""}">
-          <h3>${escapeHtml(collection.name)}</h3>
-          <p class="muted">${escapeHtml(collection.description || "No description")}</p>
-          <p class="muted">${collection.document_count} documents - ${collection.chat_count} chats</p>
-          <button class="secondary" data-select="${collection.id}">Select</button>
-        </div>
-      `).join("") || `<p class="muted">No collections yet.</p>`;
-      document.querySelectorAll("[data-select]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          state.selectedCollectionId = button.dataset.select;
-          state.sessionId = null;
-          localStorage.setItem("kb_collection", state.selectedCollectionId);
-          localStorage.removeItem("kb_session");
-          await loadCollections();
-          await loadDocuments();
-          renderPage("chat");
-        });
-      });
-      renderCollectionLabel();
-    }
-
-    function renderCollectionLabel() {
-      const selected = state.collections.find((item) => item.id === state.selectedCollectionId);
-      $("selected-collection-label").textContent = selected
-        ? `Collection: ${selected.name}`
-        : "No collection selected";
-    }
-
-    async function loadDocuments() {
-      if (!state.selectedCollectionId) return;
-      const docs = await api(`/collections/${state.selectedCollectionId}/documents`);
-      $("doc-list").innerHTML = docs.map((doc) => `
-        <div class="item">
-          <h3>${escapeHtml(doc.source)}</h3>
-          <p class="muted">${doc.chunks_indexed} chunks indexed</p>
-        </div>
-      `).join("") || `<p class="muted">No documents in this collection.</p>`;
-    }
-
-    async function ensureCollection() {
-      if (state.selectedCollectionId) return state.selectedCollectionId;
-      let collection = state.collections[0];
-      if (!collection) {
-        collection = await api("/collections", {
-          method: "POST",
-          body: JSON.stringify({
-            name: "My Knowledge Base",
-            description: "Default collection created automatically",
-          }),
-        });
-        await loadMetrics();
-      }
-      state.selectedCollectionId = collection.id;
-      localStorage.setItem("kb_collection", collection.id);
-      await loadCollections();
-      await loadDocuments();
-      return collection.id;
-    }
-
-    async function startGuidedDemo() {
-      const stamp = Date.now();
-      const email = `reviewer-${stamp}@example.com`;
-      const password = `demo-password-${stamp}`;
-      $("auth-email").value = email;
-      $("auth-password").value = password;
-      $("auth-name").value = "Portfolio Reviewer";
-      const auth = await api("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ email, password, display_name: "Portfolio Reviewer" }),
-      });
-      state.token = auth.token;
-      state.user = auth.user;
-      localStorage.setItem("kb_token", auth.token);
-      localStorage.setItem("kb_user", JSON.stringify(auth.user));
-      renderShell();
-      const collection = await api("/collections", {
-        method: "POST",
-        body: JSON.stringify({
-          name: "Recruiter Demo",
-          description: "Ready-to-chat sample collection for the portfolio demo",
-        }),
-      });
-      state.selectedCollectionId = collection.id;
-      localStorage.setItem("kb_collection", collection.id);
-      await api(`/collections/${collection.id}/documents`, {
-        method: "POST",
-        body: JSON.stringify({ source: "recruiter-demo-guide", text: demoDocument }),
-      });
-      $("chat-question").value = "What does this project demonstrate?";
-      $("chat-log").innerHTML = `
-        <div class="empty-chat">
-          <h2>Demo workspace ready</h2>
-          <p class="muted">A sample collection has been created. Ask the suggested question or type your own.</p>
-        </div>`;
-      await refreshAll();
-      renderPage("chat");
-    }
-
-    function addBubble(role, content) {
-      const empty = document.querySelector(".empty-chat");
-      if (empty) empty.remove();
-      const div = document.createElement("div");
-      div.className = `bubble ${role}`;
-      div.textContent = content;
-      $("chat-log").appendChild(div);
-      $("chat-log").scrollTop = $("chat-log").scrollHeight;
-    }
-
-    function formatCitationLine(citations) {
-      const sources = [...new Set(citations.map((item) => item.source).filter(Boolean))];
-      if (!sources.length) return "No citations found.";
-      return `Sources: ${sources.slice(0, 3).join(", ")}`;
-    }
-
-    $("demo-btn").addEventListener("click", async () => {
-      try {
-        clearErrors();
-        await startGuidedDemo();
-      } catch (error) { showAuthError(error); }
-    });
-
-    $("register-btn").addEventListener("click", async () => {
-      try {
-        clearErrors();
-        const auth = await api("/auth/register", {
-          method: "POST",
-          body: JSON.stringify({
-            email: $("auth-email").value,
-            password: $("auth-password").value,
-            display_name: $("auth-name").value,
-          }),
-        });
-        setAuth(auth);
-      } catch (error) { showAuthError(error); }
-    });
-
-    $("login-btn").addEventListener("click", async () => {
-      try {
-        clearErrors();
-        const auth = await api("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email: $("auth-email").value, password: $("auth-password").value }),
-        });
-        setAuth(auth);
-      } catch (error) { showAuthError(error); }
-    });
-
-    $("logout-btn").addEventListener("click", clearSession);
-    $("clear-local-btn").addEventListener("click", () => {
-      clearSession();
-      location.reload();
-    });
-
-    document.querySelectorAll(".nav-btn").forEach((button) => {
-      button.addEventListener("click", () => renderPage(button.dataset.page));
-    });
-
-    $("create-collection-btn").addEventListener("click", async () => {
-      try {
-        clearErrors();
-        const collection = await api("/collections", {
-          method: "POST",
-          body: JSON.stringify({
-            name: $("collection-name").value,
-            description: $("collection-description").value,
-          }),
-        });
-        state.selectedCollectionId = collection.id;
-        localStorage.setItem("kb_collection", collection.id);
-        await refreshAll();
-        renderPage("documents");
-      } catch (error) { showAppError(error); }
-    });
-
-    $("ingest-doc-btn").addEventListener("click", async () => {
-      try {
-        clearErrors();
-        const collectionId = await ensureCollection();
-        await api(`/collections/${collectionId}/documents`, {
-          method: "POST",
-          body: JSON.stringify({ source: $("document-source").value, text: $("document-text").value }),
-        });
-        await refreshAll();
-        renderPage("chat");
-      } catch (error) { showAppError(error); }
-    });
-
-    $("new-chat-btn").addEventListener("click", () => {
-      state.sessionId = null;
-      localStorage.removeItem("kb_session");
-      $("chat-log").innerHTML = `
-        <div class="empty-chat">
-          <h2>New chat</h2>
-          <p class="muted">Ask something about your documents. A default collection will be created if needed.</p>
-        </div>`;
-      renderPage("chat");
-    });
-
-    $("ask-btn").addEventListener("click", async () => {
-      const question = $("chat-question").value;
-      addBubble("user", question);
-      try {
-        clearErrors();
-        const collectionId = await ensureCollection();
-        const data = await api(`/collections/${collectionId}/chat`, {
-          method: "POST",
-          body: JSON.stringify({ question, session_id: state.sessionId, top_k: 4 }),
-        });
-        state.sessionId = data.session_id;
-        localStorage.setItem("kb_session", data.session_id);
-        addBubble("assistant", `${data.answer}\\n\\n${formatCitationLine(data.citations)}`);
-        await loadMetrics();
-      } catch (error) {
-        addBubble("assistant", error.message || String(error));
-      }
-    });
-
-    renderShell();
-    refreshAll().catch(showAppError);
-  </script>
+  <footer>
+    <div class="wrap">Built as a backend portfolio project focused on practical RAG, API design, and deployment readiness.</div>
+  </footer>
 </body>
 </html>
         """

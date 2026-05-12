@@ -67,8 +67,8 @@ def test_home_page_returns_ui(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "KnowledgeBase AI" in response.text
-    assert "Start guided demo" in response.text
+    assert "AI RAG Backend System" in response.text
+    assert "Inspect the API" in response.text
 
 
 def test_authenticated_collection_chat_flow(client: TestClient) -> None:

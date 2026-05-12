@@ -2,17 +2,17 @@
 
 [![CI](https://github.com/thatyakuzaguy/Ai_Rag_Backend_System/actions/workflows/ci.yml/badge.svg)](https://github.com/thatyakuzaguy/Ai_Rag_Backend_System/actions/workflows/ci.yml)
 
-A full-stack Retrieval-Augmented Generation workspace built with FastAPI. Users can create an account, organize documents into collections, ingest knowledge, chat with collection-specific context, and review citations through a modern browser dashboard.
+A full-stack Retrieval-Augmented Generation backend built with FastAPI. The live homepage presents the system architecture, while the API supports accounts, collections, document ingestion, vector search, collection-specific chat, citations, and feedback.
 
 Live demo: [https://ai-rag-backend-system.onrender.com](https://ai-rag-backend-system.onrender.com)
 
 ## Recruiter Quick Demo
 
 1. Open the live demo.
-2. Click **Start guided demo**.
-3. Ask the suggested question or try: `How does this project prevent SQL injection?`
+2. Review the architecture, security, testing, and deployment sections on the homepage.
+3. Open **Swagger Docs** to inspect the working API endpoints.
 
-The guided demo creates a temporary reviewer account, a sample collection, and a starter document so the chat is usable immediately.
+The homepage is intentionally a polished project showcase. The backend functionality remains available through Swagger and the source code.
 
 ## Why I Built This
 
@@ -23,7 +23,7 @@ The focus is on clean API design, service separation, testability, and deploymen
 ## Highlights
 
 - FastAPI application with interactive Swagger documentation
-- Modern browser dashboard with authentication and workspace metrics
+- Polished public showcase homepage for recruiters
 - User accounts with token-based authentication
 - Collections for grouping documents and isolating retrieval context
 - Persistent document records, chat sessions, chat messages, and feedback
