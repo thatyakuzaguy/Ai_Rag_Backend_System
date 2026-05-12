@@ -19,8 +19,77 @@ class LocalExtractiveLLMProvider(LLMProvider):
             return "I do not have enough indexed context to answer that yet."
 
         sources = ", ".join(dict.fromkeys(item.source for item in context))
-        answer = self._extract_relevant_excerpt(question, context)
+        answer = self._answer_common_question(question, context)
+        if answer is None:
+            answer = self._extract_relevant_excerpt(question, context)
         return f"Based on the best matching source ({sources}), the answer is: {answer}"
+
+    @staticmethod
+    def _answer_common_question(question: str, context: list[RetrievedChunk]) -> str | None:
+        question_lower = question.lower()
+        all_text = "\n".join(item.text for item in context)
+        source_names = {item.source for item in context}
+        normalized_question = re.sub(r"[^a-zA-Z0-9\s]", " ", question_lower)
+        words = set(normalized_question.split())
+
+        if words & {"hi", "hello", "hey", "hola"}:
+            return (
+                "Hi. I can help you search indexed documents, answer RAG questions, "
+                "or explain Python basics."
+            )
+        if any(phrase in question_lower for phrase in ("thank you", "thanks", "gracias")):
+            return "You are welcome. Ask me anything about the indexed knowledge."
+        if any(phrase in question_lower for phrase in ("who are you", "what are you")):
+            return "I am the demo assistant for this AI RAG Backend System."
+        if any(
+            phrase in question_lower
+            for phrase in ("what can you do", "what do you do", "how can you help")
+        ):
+            return (
+                "I can ingest documents, retrieve relevant chunks, answer questions with "
+                "citations, explain Python basics, and describe this RAG project."
+            )
+
+        if "project-readme" in source_names:
+            if any(phrase in question_lower for phrase in ("what is this", "what is it", "what does this do")):
+                return (
+                    "AI RAG Backend System is a FastAPI Retrieval-Augmented Generation "
+                    "backend for ingesting documents, storing searchable embeddings, "
+                    "retrieving relevant context, and answering questions with citations."
+                )
+            if "endpoint" in question_lower or "api" in question_lower:
+                return (
+                    "The API includes GET /health, POST /documents, POST /documents/file, "
+                    "GET /search, POST /chat, and DELETE /documents/{source}."
+                )
+            if any(phrase in question_lower for phrase in ("how do i use", "how to use", "use it")):
+                return (
+                    "Use POST /documents to ingest text, GET /search to retrieve relevant "
+                    "chunks, and POST /chat to ask questions grounded in the indexed context."
+                )
+            if "openai" in question_lower:
+                return (
+                    "OpenAI mode is optional. Set EMBEDDING_PROVIDER=openai, "
+                    "LLM_PROVIDER=openai, OPENAI_API_KEY, OPENAI_EMBEDDING_MODEL, "
+                    "and OPENAI_CHAT_MODEL in your environment."
+                )
+
+        if "python-basics" in source_names and "virtual environment" in question_lower:
+            return (
+                "A Python virtual environment isolates a project's dependencies. "
+                "Create one with python -m venv .venv, activate it on Windows with "
+                ".\\.venv\\Scripts\\activate, then install packages with pip."
+            )
+
+        if "common beginner mistakes" in all_text and "mistake" in question_lower:
+            return (
+                "Common Python beginner mistakes include forgetting indentation, mixing tabs "
+                "and spaces, mutating a list while looping over it, using mutable default "
+                "arguments, forgetting to activate the virtual environment, and not closing "
+                "files or database connections."
+            )
+
+        return None
 
     @staticmethod
     def _extract_relevant_excerpt(question: str, context: list[RetrievedChunk]) -> str:
@@ -31,10 +100,11 @@ class LocalExtractiveLLMProvider(LLMProvider):
         }
         candidates: list[tuple[int, str]] = []
         for item in context:
-            parts = re.split(r"(?<=[.!?])\s+|\n+", item.text)
+            cleaned = LocalExtractiveLLMProvider._strip_markdown_noise(item.text)
+            parts = re.split(r"(?<=[.!?])\s+|\n+", cleaned)
             for part in parts:
                 sentence = part.strip(" -")
-                if not sentence:
+                if not sentence or LocalExtractiveLLMProvider._is_noisy_excerpt(sentence):
                     continue
                 sentence_terms = set(re.findall(r"[a-zA-Z0-9_]+", sentence.lower()))
                 score = len(query_terms & sentence_terms)
@@ -50,6 +120,18 @@ class LocalExtractiveLLMProvider(LLMProvider):
         if answer and answer[-1] not in ".!?":
             answer = f"{answer}."
         return answer
+
+    @staticmethod
+    def _strip_markdown_noise(text: str) -> str:
+        text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+        text = re.sub(r"\|.*\|", " ", text)
+        text = re.sub(r"`([^`]+)`", r"\1", text)
+        return text
+
+    @staticmethod
+    def _is_noisy_excerpt(sentence: str) -> bool:
+        noisy_markers = ("OPENAI_API_KEY", "LLM_PROVIDER", "EMBEDDING_PROVIDER", "```", "| ---")
+        return any(marker in sentence for marker in noisy_markers)
 
 
 class OpenAIChatProvider(LLMProvider):

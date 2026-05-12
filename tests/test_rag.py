@@ -54,3 +54,43 @@ def test_local_answer_extracts_relevant_sentence(tmp_path: Path) -> None:
     response = service.answer("Is a tuple mutable or immutable?", top_k=1)
 
     assert "tuple is immutable" in response.answer
+
+
+def test_project_answer_does_not_dump_openai_config(tmp_path: Path) -> None:
+    service = build_service(tmp_path / "rag.sqlite3")
+    service.ingest_text(
+        """
+        # AI RAG Backend System
+
+        A portfolio-ready Retrieval-Augmented Generation backend built with FastAPI.
+
+        ```env
+        LLM_PROVIDER=openai
+        OPENAI_API_KEY=your_key_here
+        ```
+
+        | Method | Path | Purpose |
+        | --- | --- | --- |
+        | GET | /health | Service status |
+        """,
+        source="project-readme",
+    )
+
+    response = service.answer("What is this project?", top_k=1)
+
+    assert "Retrieval-Augmented Generation backend" in response.answer
+    assert "OPENAI_API_KEY" not in response.answer
+
+
+def test_local_answer_handles_basic_conversation(tmp_path: Path) -> None:
+    service = build_service(tmp_path / "rag.sqlite3")
+    service.ingest_text(
+        "The assistant can answer questions using indexed documents and Python basics.",
+        source="conversation-basics",
+    )
+
+    greeting = service.answer("hello", top_k=1)
+    capability = service.answer("what can you do?", top_k=1)
+
+    assert "Hi" in greeting.answer
+    assert "retrieve relevant chunks" in capability.answer
