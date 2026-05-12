@@ -42,3 +42,15 @@ def test_rag_answer_contains_citations(tmp_path: Path) -> None:
     assert response.citations
     assert response.context
     assert "retrieved context" in response.answer
+
+
+def test_local_answer_extracts_relevant_sentence(tmp_path: Path) -> None:
+    service = build_service(tmp_path / "rag.sqlite3")
+    service.ingest_text(
+        "A list is mutable in Python. A tuple is immutable in Python.",
+        source="python-note",
+    )
+
+    response = service.answer("Is a tuple mutable or immutable?", top_k=1)
+
+    assert "tuple is immutable" in response.answer

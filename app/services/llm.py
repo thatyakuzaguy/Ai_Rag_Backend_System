@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 
 from openai import OpenAI
@@ -17,14 +18,38 @@ class LocalExtractiveLLMProvider(LLMProvider):
         if not context:
             return "I do not have enough indexed context to answer that yet."
 
-        strongest = context[0].text.strip()
         sources = ", ".join(dict.fromkeys(item.source for item in context))
-        answer = strongest[:700].strip()
+        answer = self._extract_relevant_excerpt(question, context)
+        return f"Based on the best matching source ({sources}), the answer is: {answer}"
+
+    @staticmethod
+    def _extract_relevant_excerpt(question: str, context: list[RetrievedChunk]) -> str:
+        query_terms = {
+            token
+            for token in re.findall(r"[a-zA-Z0-9_]+", question.lower())
+            if len(token) > 2
+        }
+        candidates: list[tuple[int, str]] = []
+        for item in context:
+            parts = re.split(r"(?<=[.!?])\s+|\n+", item.text)
+            for part in parts:
+                sentence = part.strip(" -")
+                if not sentence:
+                    continue
+                sentence_terms = set(re.findall(r"[a-zA-Z0-9_]+", sentence.lower()))
+                score = len(query_terms & sentence_terms)
+                if score:
+                    candidates.append((score, sentence))
+
+        if candidates:
+            candidates.sort(key=lambda candidate: (candidate[0], len(candidate[1])), reverse=True)
+            answer = candidates[0][1][:700].strip()
+        else:
+            answer = context[0].text[:700].strip()
+
         if answer and answer[-1] not in ".!?":
             answer = f"{answer}."
-        return (
-            f"Based on the best matching source ({sources}), the answer is: {answer}"
-        )
+        return answer
 
 
 class OpenAIChatProvider(LLMProvider):
