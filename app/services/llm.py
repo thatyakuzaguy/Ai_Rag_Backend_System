@@ -17,11 +17,13 @@ class LocalExtractiveLLMProvider(LLMProvider):
         if not context:
             return "I do not have enough indexed context to answer that yet."
 
-        strongest = context[0]
+        strongest = context[0].text.strip()
         sources = ", ".join(dict.fromkeys(item.source for item in context))
+        answer = strongest[:700].strip()
+        if answer and answer[-1] not in ".!?":
+            answer = f"{answer}."
         return (
-            f"Based on the retrieved context from {sources}: "
-            f"{strongest.text[:700].strip()}"
+            f"Based on the best matching source ({sources}), the answer is: {answer}"
         )
 
 

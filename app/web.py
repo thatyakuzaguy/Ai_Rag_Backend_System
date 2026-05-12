@@ -93,6 +93,27 @@ def home_page() -> HTMLResponse:
       white-space: pre-wrap;
       word-break: break-word;
     }
+    .output {
+      min-height: 120px;
+      margin: 14px 0 0;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #dfe3ea;
+    }
+    .result {
+      padding: 12px 0;
+      border-top: 1px solid #e2e6ed;
+    }
+    .result:first-child { border-top: 0; padding-top: 0; }
+    .result strong { display: block; margin-bottom: 4px; }
+    .score { color: #5b6472; font-size: 13px; }
+    .answer {
+      margin: 0 0 12px;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    .empty { color: #687386; }
     .status {
       display: inline-flex;
       align-items: center;
@@ -133,7 +154,7 @@ def home_page() -> HTMLResponse:
         <label for="document-text">Text</label>
         <textarea id="document-text">RAG retrieves relevant context before generating a grounded answer with citations.</textarea>
         <button id="ingest-btn">Ingest</button>
-        <pre id="ingest-output"></pre>
+        <div id="ingest-output" class="output"></div>
       </section>
 
       <section>
@@ -143,7 +164,7 @@ def home_page() -> HTMLResponse:
         <label for="search-top-k">Top K</label>
         <input id="search-top-k" type="number" min="1" max="20" value="3" />
         <button id="search-btn">Search</button>
-        <pre id="search-output"></pre>
+        <div id="search-output" class="output"></div>
       </section>
 
       <section class="wide">
@@ -153,7 +174,7 @@ def home_page() -> HTMLResponse:
         <label for="chat-top-k">Top K</label>
         <input id="chat-top-k" type="number" min="1" max="20" value="3" />
         <button id="chat-btn">Ask</button>
-        <pre id="chat-output"></pre>
+        <div id="chat-output" class="output"></div>
       </section>
     </div>
   </main>
@@ -173,12 +194,53 @@ def home_page() -> HTMLResponse:
       return body;
     }
 
-    function show(id, value) {
-      $(id).textContent = JSON.stringify(value, null, 2);
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showJson(id, value) {
+      $(id).innerHTML = `<pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
     }
 
     function showError(id, error) {
-      show(id, { error: error.status || "request_failed", detail: error.body || String(error) });
+      showJson(id, { error: error.status || "request_failed", detail: error.body || String(error) });
+    }
+
+    function showIngest(data) {
+      $("ingest-output").innerHTML = `
+        <strong>Indexed ${data.chunks_indexed} chunk${data.chunks_indexed === 1 ? "" : "s"}</strong>
+        <p class="subtle">Source: ${escapeHtml(data.source)}</p>
+      `;
+    }
+
+    function showSearch(data) {
+      if (!data.results.length) {
+        $("search-output").innerHTML = `<p class="empty">No matching chunks found. Ingest a document first.</p>`;
+        return;
+      }
+      $("search-output").innerHTML = data.results.map((item, index) => `
+        <div class="result">
+          <strong>${index + 1}. ${escapeHtml(item.source)}</strong>
+          <div class="score">Score: ${Number(item.score).toFixed(3)} | Chunk: ${escapeHtml(item.id)}</div>
+          <p>${escapeHtml(item.text)}</p>
+        </div>
+      `).join("");
+    }
+
+    function showChat(data) {
+      const citations = data.citations.map((item) => `
+        <div class="score">${escapeHtml(item.source)} | ${escapeHtml(item.chunk_id)} | score ${Number(item.score).toFixed(3)}</div>
+      `).join("");
+      $("chat-output").innerHTML = `
+        <p class="answer">${escapeHtml(data.answer)}</p>
+        <strong>Citations</strong>
+        ${citations || `<p class="empty">No citations returned.</p>`}
+      `;
     }
 
     async function checkHealth() {
@@ -201,7 +263,7 @@ def home_page() -> HTMLResponse:
             metadata: { ui: "home" },
           }),
         });
-        show("ingest-output", data);
+        showIngest(data);
         checkHealth();
       } catch (error) {
         showError("ingest-output", error);
@@ -214,7 +276,7 @@ def home_page() -> HTMLResponse:
           query: $("search-query").value,
           top_k: $("search-top-k").value,
         });
-        show("search-output", await request(`/search?${params}`));
+        showSearch(await request(`/search?${params}`));
       } catch (error) {
         showError("search-output", error);
       }
@@ -229,7 +291,7 @@ def home_page() -> HTMLResponse:
             top_k: Number($("chat-top-k").value),
           }),
         });
-        show("chat-output", data);
+        showChat(data);
       } catch (error) {
         showError("chat-output", error);
       }
