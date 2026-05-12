@@ -17,6 +17,16 @@ from app.web import home_page
 router = APIRouter()
 
 
+def provider_error(error: Exception) -> HTTPException:
+    message = str(error)
+    if "api_key" in message.lower() or "authentication" in message.lower():
+        message = "AI provider authentication failed. Check OPENAI_API_KEY in environment variables."
+    return HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail=f"AI provider request failed: {message}",
+    )
+
+
 @router.get("/", include_in_schema=False)
 def home():
     return home_page()
@@ -40,7 +50,10 @@ def ingest_document(
     payload: DocumentIngestRequest,
     rag: RAGService = Depends(get_rag_service),
 ) -> DocumentIngestResponse:
-    chunks = rag.ingest_text(payload.text, source=payload.source, metadata=payload.metadata)
+    try:
+        chunks = rag.ingest_text(payload.text, source=payload.source, metadata=payload.metadata)
+    except Exception as error:
+        raise provider_error(error) from error
     return DocumentIngestResponse(source=payload.source, chunks_indexed=chunks)
 
 
@@ -63,7 +76,10 @@ async def ingest_file(
 
     raw = await file.read()
     text = raw.decode("utf-8", errors="replace")
-    chunks = rag.ingest_text(text, source=filename, metadata={"filename": filename})
+    try:
+        chunks = rag.ingest_text(text, source=filename, metadata={"filename": filename})
+    except Exception as error:
+        raise provider_error(error) from error
     return DocumentIngestResponse(source=filename, chunks_indexed=chunks)
 
 
@@ -73,13 +89,19 @@ def search(
     top_k: int = Query(4, ge=1, le=20),
     rag: RAGService = Depends(get_rag_service),
 ) -> SearchResponse:
-    results = rag.search(query=query, top_k=top_k)
+    try:
+        results = rag.search(query=query, top_k=top_k)
+    except Exception as error:
+        raise provider_error(error) from error
     return SearchResponse(query=query, results=results)
 
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest, rag: RAGService = Depends(get_rag_service)) -> ChatResponse:
-    return rag.answer(question=payload.question, top_k=payload.top_k)
+    try:
+        return rag.answer(question=payload.question, top_k=payload.top_k)
+    except Exception as error:
+        raise provider_error(error) from error
 
 
 @router.delete("/documents/{source}", response_model=DeleteResponse)
